@@ -4,7 +4,7 @@ import os
 import csv
 from pathlib import Path
 
-def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15):
+def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15, continue_annotation=False):
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -16,8 +16,14 @@ def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15):
     with open(label_csv_path, mode='w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['image', 'x', 'y'])  # CSV header
+        num_backup = 1
+        if continue_annotation:
+            with open(os.path.join(output_dir, 'num_backup.txt'), 'r') as f:
+                num_backup = f.readlines()
+                num_backup= int(num_backup[0])
 
-        for img_path in image_files:
+        for img_number,img_path in enumerate(image_files[num_backup:],start=num_backup):
+            print(f"Anotando imagen {img_number + 1}/{len(image_files)}: {img_path.name}")
             img = cv2.imread(str(img_path))
             if img is None:
                 print(f"Error reading {img_path}")
@@ -49,13 +55,18 @@ def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15):
                     save_path = output_dir / img_path.name
                     cv2.imwrite(str(save_path), annotated_img)
                     writer.writerow([img_path.name, clicked[0], clicked[1]])
+                    print(f"[GUARDADA] {img_path.name} ,x: {clicked[0]}, y: {clicked[1]}")
                     break
                 elif key == ord('d'):
                     print(f"[IGNORADA] {img_path.name}")
                     break
                 elif key == ord('q'):
+                    with open(os.path.join(output_dir, 'num_backup.txt'), 'w') as f:
+                        f.write(f"{img_number}\n")
                     print("Salida anticipada.")
                     cv2.destroyAllWindows()
                     return
+                    
+
 
 
