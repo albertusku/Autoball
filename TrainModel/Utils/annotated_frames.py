@@ -4,6 +4,8 @@ import os
 import csv
 from pathlib import Path
 
+SCALE_FACTOR = 2  # o 2.0 según tu pantalla
+
 def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15, continue_annotation=False):
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
@@ -26,12 +28,14 @@ def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15, con
 
         for img_number,img_path in enumerate(image_files[num_backup:],start=num_backup):
             print(f"Anotando imagen {img_number + 1}/{len(image_files)}: {img_path.name}")
+            
             img = cv2.imread(str(img_path))
             if img is None:
                 print(f"Error reading {img_path}")
                 continue
 
-            clone = img.copy()
+            resized_img = cv2.resize(img, None, fx=SCALE_FACTOR, fy=SCALE_FACTOR)
+            clone = resized_img.copy()
             clicked = []
 
             def click_event(event, x, y, flags, param):
