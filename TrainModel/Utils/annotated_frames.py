@@ -13,9 +13,11 @@ def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15, con
 
     image_files = sorted([f for f in input_dir.glob("*.jpg")])
 
-    with open(label_csv_path, mode='w', newline='') as csvfile:
+    mode = 'a' if continue_annotation else 'w'
+    with open(label_csv_path, mode=mode, newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['image', 'x', 'y'])  # CSV header
+        if mode == 'w':
+            writer.writerow(['image', 'x', 'y'])  # Escribe cabecera solo si es nuevo
         num_backup = 1
         if continue_annotation:
             with open(os.path.join(output_dir, 'num_backup.txt'), 'r') as f:
