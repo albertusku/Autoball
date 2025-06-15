@@ -1,0 +1,17 @@
+# Ignorar archivos temporales de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignorar configuración de editores
+.vscode/
+.idea/
+
+# Ignorar outputs, logs y datos
+*.log
+*.csv
+*.jpg
+*.Zone.Identifier
+*.mp4
+
+TrainModel/InputVideos/
