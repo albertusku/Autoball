@@ -51,7 +51,7 @@ def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15, con
             cv2.setMouseCallback("Annotate", click_event)
 
             # Mostrar imagen original al principio
-            cv2.imshow("Annotate", img)
+            cv2.imshow("Annotate", resized_img)
 
             while True:
                 key = cv2.waitKey(0) & 0xFF
@@ -60,8 +60,8 @@ def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15, con
                     cv2.circle(annotated_img, (clicked[0], clicked[1]), circle_radius, (0, 0, 255), 2)
                     save_path = output_dir / img_path.name
                     cv2.imwrite(str(save_path), annotated_img)
-                    writer.writerow([img_path.name, clicked[0], clicked[1]])
-                    print(f"[GUARDADA] {img_path.name} ,x: {clicked[0]}, y: {clicked[1]}")
+                    writer.writerow([img_path.name, clicked[0]/SCALE_FACTOR, clicked[1]/SCALE_FACTOR])
+                    print(f"[GUARDADA] {img_path.name} ,x: {clicked[0]/SCALE_FACTOR}, y: {clicked[1]/SCALE_FACTOR}")
                     break
                 elif key == ord('d'):
                     print(f"[IGNORADA] {img_path.name}")
