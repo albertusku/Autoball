@@ -4,7 +4,7 @@ import os
 import csv
 from pathlib import Path
 
-SCALE_FACTOR = 2  # o 2.0 según tu pantalla
+SCALE_FACTOR = 2.0  # o 2.0 según tu pantalla
 
 def annotate_frames(input_dir, output_dir, label_csv_path, circle_radius=15, continue_annotation=False):
     input_dir = Path(input_dir)

@@ -2,13 +2,11 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
 from torchvision import models, transforms
-from Utils.dataset import BasketballPositionDataset
+from Utils.dataset import BasketballPositionDataset, load_all_labels
 import matplotlib.pyplot as plt
 import os
 
 # Configuración
-DATASET_PATH = "ExtractedFrames/test1"
-CSV_PATH = "Labels/test1/labels.csv"
 BATCH_SIZE = 32
 NUM_EPOCHS = 10
 LR = 1e-4
@@ -22,7 +20,9 @@ transform = transforms.Compose([
 ])
 
 # Dataset y splits
-dataset = BasketballPositionDataset(DATASET_PATH, CSV_PATH, transform=transform)
+labels_df = load_all_labels()
+labels_df.to_csv("Labels/combined_labels.csv", index=False)
+dataset = BasketballPositionDataset(labels_df, transform=transform)
 train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 train_ds, val_ds = random_split(dataset, [train_size, val_size])

@@ -46,6 +46,6 @@ def revisar_labels(csv_path, images_dir, circle_radius=10):
 
 if __name__ == "__main__":
     revisar_labels(
-        csv_path="Labels/test1/labels.csv",
-        images_dir="ExtractedFrames/test1"
+        csv_path="Labels/test2/labels.csv",
+        images_dir="ExtractedFrames/test2"
     )

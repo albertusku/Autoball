@@ -6,12 +6,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
 import os
-from Utils.dataset import BasketballPositionDataset
+from Utils.dataset import BasketballPositionDataset, load_all_labels
 
 # Configuración
 MODEL_PATH = "Model/Autoball_model.pth"
-IMAGES_DIR = "ExtractedFrames/test1"
-LABELS_CSV = "Labels/test1/labels.csv"
 N_SAMPLES = 5
 IMAGE_SIZE = (224, 224)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -22,7 +20,9 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
 ])
-dataset = BasketballPositionDataset(IMAGES_DIR, LABELS_CSV, transform=transform)
+
+labels_df = load_all_labels()
+dataset = BasketballPositionDataset(labels_df, transform=transform)
 
 # Modelo
 model = resnet18(pretrained=False)
@@ -36,7 +36,7 @@ indices = random.sample(range(len(dataset)), N_SAMPLES)
 
 for idx in indices:
     img_tensor, target = dataset[idx]
-    img_path = os.path.join(IMAGES_DIR, dataset.data.iloc[idx]['image'])
+    img_path = dataset.data.iloc[idx]['image']  # Ya es path completo
 
     with Image.open(img_path) as original_img:
         w, h = original_img.size
