@@ -31,7 +31,7 @@ train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE)
 
 # Modelo
-model = models.resnet18(pretrained=True)
+model = models.resnet50(pretrained=True)
 model.fc = nn.Linear(model.fc.in_features, 2)  # Salida: x, y
 model = model.to(DEVICE)
 

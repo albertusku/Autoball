@@ -1,7 +1,7 @@
 import torch
 import random
 from torchvision import transforms
-from torchvision.models import resnet18
+from torchvision.models import resnet18,resnet34,resnet50
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
@@ -10,7 +10,7 @@ from Utils.dataset import BasketballPositionDataset, load_all_labels
 
 # Configuración
 MODEL_PATH = "Model/Autoball_model.pth"
-N_SAMPLES = 5
+N_SAMPLES = 50
 IMAGE_SIZE = (224, 224)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -25,7 +25,7 @@ labels_df = load_all_labels()
 dataset = BasketballPositionDataset(labels_df, transform=transform)
 
 # Modelo
-model = resnet18(pretrained=False)
+model = resnet50(pretrained=False)
 model.fc = torch.nn.Linear(model.fc.in_features, 2)
 model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
 model.eval().to(DEVICE)

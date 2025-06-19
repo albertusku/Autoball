@@ -22,11 +22,13 @@ def main(args):
     if args.continue_annotation:
         try:
             print(f"Annotating frames in directory: {extractedFrames_path}")
-            annotate_frames(extractedFrames_path, annotatedFrames_path, labesl_csv_path, circle_radius=10, continue_annotation=True)
+            annotate_frames(extractedFrames_path, annotatedFrames_path, labesl_csv_path, circle_radius=10, 
+                            continue_annotation=True,assisted=args.assisted)
         except Exception as e:
             print(f"An error occurred during annotation: {e}")
         return
 
+    
     try:
         print(f"Extracting frames from video: {videos[0]}, saving to {extractedFrames_path}, step={step}, max_frames={max_frames}")
         saved_paths = extract_frames_from_video(video_path, extractedFrames_path, step, max_frames)
@@ -36,7 +38,8 @@ def main(args):
     
     try:
         print(f"Annotating frames in directory: {extractedFrames_path}")
-        annotate_frames(extractedFrames_path, annotatedFrames_path, labesl_csv_path, circle_radius=10)
+        annotate_frames(extractedFrames_path, annotatedFrames_path, labesl_csv_path, circle_radius=10, 
+                        continue_annotation=False, assisted=args.assisted)
     except Exception as e:
         print(f"An error occurred during annotation: {e}")
 
@@ -51,6 +54,11 @@ if __name__ == "__main__":
         "--continue_annotation",
         action="store_true",
         help="Sigue con la anotación de frames ya extraídos",
+    )
+    parser.add_argument(
+        "--assisted",
+        action="store_true",
+        help="Anotacion asistisda por el modelo",
     )
 
     args = parser.parse_args()
