@@ -81,7 +81,7 @@ def main(args):
     train_losses, val_losses = [], []
 
     if args.check_error:
-        print("🔍 Calculando errores de píxeles en el dataset...")
+        print("Calculando errores de píxeles en el dataset...")
         model.load_state_dict(torch.load("Model/Autoball_model.pth", map_location=DEVICE))
         compute_pixel_errors(model, dataset, DEVICE)
         return
