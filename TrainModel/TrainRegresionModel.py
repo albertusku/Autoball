@@ -9,6 +9,7 @@ import numpy as np
 from tqdm import tqdm
 from pathlib import Path
 from PIL import Image
+import argparse
 
 # Configuración
 BATCH_SIZE = 32
@@ -17,6 +18,7 @@ LR = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def  compute_pixel_errors(model, dataset, device):
+    tolerance = 15  # Tolerancia en píxeles
     model.eval()
     pixel_errors = []
 
@@ -41,13 +43,12 @@ def  compute_pixel_errors(model, dataset, device):
         pixel_errors.append(error)
 
     pixel_errors = np.array(pixel_errors)
-    print(f"\n📊 Error medio: {pixel_errors.mean():.2f} px")
-    print(f"📉 Mediana: {np.median(pixel_errors):.2f} px")
-    print(f"📈 Máximo: {pixel_errors.max():.2f} px")
-    print(f"✅ ≤10px: {(pixel_errors <= 10).sum()} / {len(pixel_errors)} imágenes ({(pixel_errors <= 10).mean()*100:.1f}%)")
-    return pixel_errors
+    print(f"\nError medio: {pixel_errors.mean():.2f} px")
+    print(f"Mediana: {np.median(pixel_errors):.2f} px")
+    print(f"Máximo: {pixel_errors.max():.2f} px")
+    print(f"≤{tolerance}px: {(pixel_errors <= tolerance).sum()} / {len(pixel_errors)} imágenes ({(pixel_errors <= tolerance).mean()*100:.1f}%)")
 
-def main():
+def main(args):
 
     # Transformaciones
     transform = transforms.Compose([
@@ -78,6 +79,12 @@ def main():
 
     # Entrenamiento
     train_losses, val_losses = [], []
+
+    if args.check_error:
+        print("🔍 Calculando errores de píxeles en el dataset...")
+        model.load_state_dict(torch.load("Model/Autoball_model.pth", map_location=DEVICE))
+        compute_pixel_errors(model, dataset, DEVICE)
+        return
 
     for epoch in range(NUM_EPOCHS):
         model.train()
@@ -126,4 +133,15 @@ def main():
     compute_pixel_errors(model, dataset, DEVICE)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Script para extracción de frames y anotación manual del balón"
+    )
+
+    parser.add_argument(
+        "--check_error",
+        action="store_true",
+        help="Calcula el error medio de las predicciones del modelo en píxeles",
+    )
+
+    args = parser.parse_args()
+    main(args)
