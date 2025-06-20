@@ -48,6 +48,13 @@ def  compute_pixel_errors(model, dataset, device):
     print(f"Máximo: {pixel_errors.max():.2f} px")
     print(f"≤{tolerance}px: {(pixel_errors <= tolerance).sum()} / {len(pixel_errors)} imágenes ({(pixel_errors <= tolerance).mean()*100:.1f}%)")
 
+    pixel_errors = np.array(pixel_errors)
+    accepted = (pixel_errors <= tolerance).sum()
+    total = len(pixel_errors)
+    percentage = 100 * accepted / total
+
+    return percentage
+
 def main(args):
 
     # Transformaciones
@@ -116,9 +123,6 @@ def main(args):
 
         print(f" Epoch {epoch+1}/{NUM_EPOCHS} - Train Loss: {avg_train_loss:.4f} - Val Loss: {avg_val_loss:.4f}")
 
-    #  Guardar modelo
-    os.makedirs("Model", exist_ok=True)
-    torch.save(model.state_dict(), "Model/Autoball_model.pth")
 
     #  Plot de pérdidas
     plt.plot(train_losses, label='Train Loss')
@@ -130,7 +134,17 @@ def main(args):
     plt.grid()
     plt.savefig("Model/loss_plot.png")
 
-    compute_pixel_errors(model, dataset, DEVICE)
+    accepted_tolerance=compute_pixel_errors(model, dataset, DEVICE)
+    with open("Model/accepted_tolerance.txt", "r") as f:
+        old_tolerance = float(f.read().strip())
+    if accepted_tolerance > old_tolerance:
+        print("El modelo ha mejorado su precisión, guardando nuevo modelo.")
+        os.makedirs("Model", exist_ok=True)
+        torch.save(model.state_dict(), "Model/Autoball_model.pth")
+        with open("Model/accepted_tolerance.txt", "w") as f:
+            f.write(f"{accepted_tolerance:.2f}")
+    else:
+        print("El modelo no ha mejorado su precisión, no se guarda el nuevo modelo.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
