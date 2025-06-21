@@ -10,6 +10,7 @@ from tqdm import tqdm
 from pathlib import Path
 from PIL import Image
 import argparse
+import matplotlib.patches as patches
 
 # Configuración
 BATCH_SIZE = 32
@@ -17,10 +18,12 @@ NUM_EPOCHS = 10
 LR = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def  compute_pixel_errors(model, dataset, device):
+def  compute_pixel_errors(model, dataset, device,see_points=False):
     tolerance = 15  # Tolerancia en píxeles
     model.eval()
     pixel_errors = []
+    list_coords_pred = []
+    list_coords_gt = []
 
     for idx in tqdm(range(len(dataset)), desc="Evaluando"):
         img_tensor, target = dataset[idx]
@@ -38,9 +41,30 @@ def  compute_pixel_errors(model, dataset, device):
         y_gt = target[1].item() * h
         x_pred = pred[0] * w
         y_pred = pred[1] * h
+        list_coords_pred.append((x_pred, y_pred))
+        list_coords_gt.append((x_gt, y_gt))
 
         error = np.sqrt((x_pred - x_gt) ** 2 + (y_pred - y_gt) ** 2)
         pixel_errors.append(error)
+    if args.see_points:
+        fig, ax = plt.subplots(figsize=(6.4, 3.6), dpi=100)
+        ax.set_xlim(0, 640)
+        ax.set_ylim(360, 0)  # invertir eje Y para que (0,0) esté arriba a la izquierda
+        ax.set_title("Predicciones vs. Reales (360p)")
+        ax.set_facecolor('black')
+
+        for x_pred, y_pred in list_coords_pred:
+            ax.add_patch(patches.Circle((x_pred, y_pred), radius=4, color='lime'))
+
+        # Dibujar puntos reales en rojo
+        for x_gt, y_gt in list_coords_gt:
+            ax.add_patch(patches.Circle((x_gt, y_gt), radius=4, color='red'))
+        
+        output_path = "/home/ruiz17/Autoball/TrainModel/Model/pred_vs_gt_360p.png"
+        plt.axis('off')
+        plt.tight_layout()
+        plt.savefig(output_path)
+        plt.close()
 
     pixel_errors = np.array(pixel_errors)
     print(f"\nError medio: {pixel_errors.mean():.2f} px")
@@ -134,9 +158,12 @@ def main(args):
     plt.grid()
     plt.savefig("Model/loss_plot.png")
 
-    accepted_tolerance=compute_pixel_errors(model, dataset, DEVICE)
-    with open("Model/accepted_tolerance.txt", "r") as f:
-        old_tolerance = float(f.read().strip())
+    accepted_tolerance=compute_pixel_errors(model, dataset, DEVICE,args.see_points)
+    try:
+        with open("Model/accepted_tolerance.txt", "r") as f:
+            old_tolerance = float(f.read().strip())
+    except FileNotFoundError:
+        old_tolerance = 0.0
     if accepted_tolerance > old_tolerance:
         print("El modelo ha mejorado su precisión, guardando nuevo modelo.")
         os.makedirs("Model", exist_ok=True)
@@ -156,6 +183,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Calcula el error medio de las predicciones del modelo en píxeles",
     )
+
+    parser.add_argument(
+        "--see_points",
+        action="store_true",
+        help="Visualiza las coordenadas predichas y reales en un gráfico",
+    )
+
 
     args = parser.parse_args()
     main(args)
