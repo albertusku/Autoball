@@ -12,7 +12,6 @@ from Config.model_config import transform_config, model_config
 
 SCALE_FACTOR = 2.0  # o 2.0 según tu pantalla
 MODEL_PATH = "Model/Autoball_model.pth"
-IMAGE_SIZE = (224, 224)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 STADISTICS_CSV = "Utils/Stadistics.csv"
 
