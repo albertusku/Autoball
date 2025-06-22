@@ -14,7 +14,7 @@ import matplotlib.patches as patches
 
 # Configuración
 BATCH_SIZE = 32
-NUM_EPOCHS = 10
+NUM_EPOCHS = 20
 LR = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -83,9 +83,11 @@ def main(args):
 
     # Transformaciones
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
+    transforms.Resize((224, 224)),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+    transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), scale=(0.95, 1.05)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.5]*3, std=[0.5]*3),
     ])
 
     # Dataset y splits
@@ -101,12 +103,20 @@ def main(args):
 
     # Modelo
     model = models.resnet50(pretrained=True)
-    model.fc = nn.Linear(model.fc.in_features, 2)  # Salida: x, y
+    model.fc = nn.Sequential(
+        nn.Linear(model.fc.in_features, 256),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(256, 2)
+    )  # Salida: x, y
     model = model.to(DEVICE)
 
     # Pérdida y optimizador
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    criterion = nn.SmoothL1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
+
 
     # Entrenamiento
     train_losses, val_losses = [], []
@@ -144,6 +154,8 @@ def main(args):
 
         avg_val_loss = val_loss / len(val_loader)
         val_losses.append(avg_val_loss)
+        scheduler.step(avg_val_loss)
+
 
         print(f" Epoch {epoch+1}/{NUM_EPOCHS} - Train Loss: {avg_train_loss:.4f} - Val Loss: {avg_val_loss:.4f}")
 
