@@ -7,7 +7,7 @@ import matplotlib.patches as patches
 from PIL import Image
 import os
 from Utils.dataset import BasketballPositionDataset, load_all_labels
-from Config.model_config import model_config, transform_config
+from Config.model_config import get_model, transform_config
 
 # Configuración
 MODEL_PATH = "Model/Autoball_model.pth"
@@ -21,7 +21,7 @@ dataset = BasketballPositionDataset(labels_df, transform=transform_config)
 # Seleccionar imágenes aleatorias
 indices = random.sample(range(len(dataset)), N_SAMPLES)
 
-
+model_config = get_model(for_training=False, load_weights=True, weights_path=MODEL_PATH)
 for idx in indices:
     img_tensor, target = dataset[idx]
     img_path = dataset.data.iloc[idx]['image']  # Ya es path completo

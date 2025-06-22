@@ -4,6 +4,7 @@ import torch
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+MODEL_PATH = "Model/Autoball_model.pth"  # Ruta al modelo entrenado
 
 transform_config = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -14,12 +15,21 @@ transform_config = transforms.Compose([
     ])
 
 
-model_config = models.resnet50(pretrained=True)
-model_config.fc = nn.Sequential(
-    nn.Linear(model_config.fc.in_features, 256),
-    nn.ReLU(),
-    nn.Dropout(0.3),
-    nn.Linear(256, 2)
-) 
-model_config = model_config.to(DEVICE)
+def get_model(for_training=True, load_weights=True, weights_path="Model/Autoball_model.pth"):
+    model = models.resnet50(pretrained=for_training)
+    model.fc = nn.Sequential(
+        nn.Linear(model.fc.in_features, 256),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(256, 2)
+    )
+    model = model.to(DEVICE)
+    
+    if not for_training:
+        model.eval()
+    
+    if load_weights and not for_training:
+        model.load_state_dict(torch.load(weights_path, map_location=DEVICE))
+    
+    return model
 

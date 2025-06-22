@@ -6,7 +6,7 @@ import torch
 from torchvision import transforms
 from PIL import Image
 from torchvision.models import resnet50
-from Config.model_config import transform_config,model_config
+from Config.model_config import transform_config, get_model
 
 MODEL_PATH = "../TrainModel/Model/Autoball_model.pth"
 IMAGE_SIZE = (224, 224)
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         capture = VideoFileCapture(args.video_file)
     else:
         capture = USBCameraCapture(camera_index=args.camera, framerate=args.framerate)
-
+    model_config = get_model(for_training=False, load_weights=True, weights_path=MODEL_PATH)
     if capture.start():
         frame_interval = 1 / args.images_per_sec  # segundos
 

@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image
 import argparse
 import matplotlib.patches as patches
-from Config.model_config import transform_config, model_config
+from Config.model_config import transform_config,get_model
 
 # Configuración
 BATCH_SIZE = 32
@@ -102,6 +102,7 @@ def main(args):
 
     # Pérdida y optimizador
     # criterion = nn.MSELoss()
+    model_config = get_model(for_training=True, load_weights=False)
     criterion = nn.SmoothL1Loss()
     optimizer = torch.optim.Adam(model_config.parameters(), lr=LR)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
