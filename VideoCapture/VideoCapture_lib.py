@@ -19,6 +19,28 @@ class BaseCapture:
         """Detiene la captura y libera recursos."""
         raise NotImplementedError
     
+    def get_distance_to_middle(self,frame,x,y):
+        """
+        Calcula la distancia desde un punto (x, y) al centro del frame.
+        
+        Args:
+            frame (numpy.ndarray): El frame de la imagen.
+            x (int): Coordenada x del punto.
+            y (int): Coordenada y del punto.
+        
+        Returns:
+            float: Distancia al centro del frame.
+        """
+        height, width = frame.shape[:2]
+        center_x, center_y = width // 2, height // 2
+        left_side=False
+        if x < 320:
+            left_side=True
+        distance = np.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
+        if left_side:
+            distance = -distance  # Negar la distancia si está a la izquierda del centro
+        return distance
+    
 
 class USBCameraCapture(BaseCapture):
     def __init__(self, camera_index=0, resolution=(640, 360), framerate=30):
@@ -50,7 +72,7 @@ class USBCameraCapture(BaseCapture):
         self.cap.release()
 
 
-class VideoFileCapture:
+class VideoFileCapture(BaseCapture):
     def __init__(self, video_path):
         self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)

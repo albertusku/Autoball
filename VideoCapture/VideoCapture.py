@@ -48,7 +48,7 @@ if __name__ == "__main__":
                         # Convertir coordenadas normalizadas a píxeles
                         x_pixel = int(x_pred * width)
                         y_pixel = int(y_pred * height)
-
+                        distance=capture.get_distance_to_middle(frame, x_pixel, y_pixel)
                         # Dibujar un círculo rojo (radio 8 px, grosor -1 = relleno)
                         cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
 
