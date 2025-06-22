@@ -1,7 +1,7 @@
 import cv2
 import threading
 import time
-
+import socket
 import numpy as np
 
 
@@ -39,7 +39,14 @@ class BaseCapture:
         distance = np.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
         if left_side:
             distance = -distance  # Negar la distancia si está a la izquierda del centro
+        self.send_data_to_PID(distance)
         return distance
+    
+    def send_data_to_PID(self,data):
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.connect("/tmp/pid_socket")
+        sock.sendall(f"{data:.2f}\n".encode())
+        sock.close()
     
 
 class USBCameraCapture(BaseCapture):
