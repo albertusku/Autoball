@@ -6,6 +6,7 @@ import torch
 from torchvision import transforms
 from PIL import Image
 from torchvision.models import resnet50
+from Config.model_config import transform_config,model_config
 
 MODEL_PATH = "../TrainModel/Model/Autoball_model.pth"
 IMAGE_SIZE = (224, 224)
@@ -13,7 +14,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 if __name__ == "__main__":
-    video_path="../TrainModel/InputVideos/test3.mp4"
+    video_path="../TrainModel/InputVideos/test4.mp4"
     parser = argparse.ArgumentParser(description="Captura de vídeo desde cámara USB o archivo de vídeo.")
     parser.add_argument("--source", type=str, default="file", help="Origen de la captura ('camera' o 'file')")
     parser.add_argument("--framerate", type=int, default=30, help="Tasa de fotogramas por segundo (default: 30)")
@@ -28,21 +29,6 @@ if __name__ == "__main__":
 
     if capture.start():
         frame_interval = 1 / args.images_per_sec  # segundos
-        try:
-            model = resnet50(pretrained=False)
-            model.fc = torch.nn.Linear(model.fc.in_features, 2)
-            model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
-            model.eval().to(DEVICE)
-
-            transform = transforms.Compose([
-            transforms.Resize(IMAGE_SIZE),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
-            ])
-        except Exception as e:
-            print(f"Error al cargar el modelo: {e}")
-            capture.stop()
-            cv2.destroyAllWindows()
 
         
         try:
@@ -53,9 +39,9 @@ if __name__ == "__main__":
                     frame = capture.read()
                     if frame is not None:
                         img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                        input_tensor = transform(img).unsqueeze(0).to(DEVICE)  
+                        input_tensor = transform_config(img).unsqueeze(0).to(DEVICE)  
                         with torch.no_grad():
-                            output = model(input_tensor).squeeze().cpu().numpy()  
+                            output = model_config(input_tensor).squeeze().cpu().numpy()  
                         x_pred, y_pred = float(output[0]), float(output[1])
                         height, width = frame.shape[:2]
 

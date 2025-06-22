@@ -7,6 +7,7 @@ import matplotlib.patches as patches
 from PIL import Image
 import os
 from Utils.dataset import BasketballPositionDataset, load_all_labels
+from Config.model_config import model_config, transform_config
 
 # Configuración
 MODEL_PATH = "Model/Autoball_model.pth"
@@ -14,21 +15,8 @@ N_SAMPLES = 50
 IMAGE_SIZE = (224, 224)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Dataset
-transform = transforms.Compose([
-    transforms.Resize(IMAGE_SIZE),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
-])
-
 labels_df = load_all_labels()
-dataset = BasketballPositionDataset(labels_df, transform=transform)
-
-# Modelo
-model = resnet50(pretrained=False)
-model.fc = torch.nn.Linear(model.fc.in_features, 2)
-model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
-model.eval().to(DEVICE)
+dataset = BasketballPositionDataset(labels_df, transform=transform_config)
 
 # Seleccionar imágenes aleatorias
 indices = random.sample(range(len(dataset)), N_SAMPLES)
@@ -41,7 +29,7 @@ for idx in indices:
     with Image.open(img_path) as original_img:
         w, h = original_img.size
         input_img = img_tensor.unsqueeze(0).to(DEVICE)
-        pred = model(input_img).squeeze().cpu().detach().numpy()
+        pred = model_config(input_img).squeeze().cpu().detach().numpy()
 
         # Desnormalizar coordenadas
         x_pred, y_pred = int(pred[0] * w), int(pred[1] * h)

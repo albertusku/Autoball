@@ -11,12 +11,34 @@ from pathlib import Path
 from PIL import Image
 import argparse
 import matplotlib.patches as patches
+from Config.model_config import transform_config, model_config
 
 # Configuración
 BATCH_SIZE = 32
 NUM_EPOCHS = 20
 LR = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def get_points(list_coords_pred, list_coords_gt):
+    fig, ax = plt.subplots(figsize=(6.4, 3.6), dpi=100)
+    ax.set_xlim(0, 640)
+    ax.set_ylim(360, 0)  # invertir eje Y para que (0,0) esté arriba a la izquierda
+    ax.set_title("Predicciones vs. Reales (360p)")
+    ax.set_facecolor('black')
+
+    for x_pred, y_pred in list_coords_pred:
+        ax.add_patch(patches.Circle((x_pred, y_pred), radius=4, color='lime'))
+
+    # Dibujar puntos reales en rojo
+    for x_gt, y_gt in list_coords_gt:
+        ax.add_patch(patches.Circle((x_gt, y_gt), radius=4, color='red'))
+    
+    output_path = "/home/ruiz17/Autoball/TrainModel/Model/pred_vs_gt_360p.png"
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
 
 def  compute_pixel_errors(model, dataset, device,see_points=False):
     tolerance = 15  # Tolerancia en píxeles
@@ -47,24 +69,8 @@ def  compute_pixel_errors(model, dataset, device,see_points=False):
         error = np.sqrt((x_pred - x_gt) ** 2 + (y_pred - y_gt) ** 2)
         pixel_errors.append(error)
     if args.see_points:
-        fig, ax = plt.subplots(figsize=(6.4, 3.6), dpi=100)
-        ax.set_xlim(0, 640)
-        ax.set_ylim(360, 0)  # invertir eje Y para que (0,0) esté arriba a la izquierda
-        ax.set_title("Predicciones vs. Reales (360p)")
-        ax.set_facecolor('black')
-
-        for x_pred, y_pred in list_coords_pred:
-            ax.add_patch(patches.Circle((x_pred, y_pred), radius=4, color='lime'))
-
-        # Dibujar puntos reales en rojo
-        for x_gt, y_gt in list_coords_gt:
-            ax.add_patch(patches.Circle((x_gt, y_gt), radius=4, color='red'))
+        get_points(list_coords_pred, list_coords_gt)
         
-        output_path = "/home/ruiz17/Autoball/TrainModel/Model/pred_vs_gt_360p.png"
-        plt.axis('off')
-        plt.tight_layout()
-        plt.savefig(output_path)
-        plt.close()
 
     pixel_errors = np.array(pixel_errors)
     print(f"\nError medio: {pixel_errors.mean():.2f} px")
@@ -81,19 +87,11 @@ def  compute_pixel_errors(model, dataset, device,see_points=False):
 
 def main(args):
 
-    # Transformaciones
-    transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-    transforms.RandomAffine(degrees=5, translate=(0.05, 0.05), scale=(0.95, 1.05)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5]*3, std=[0.5]*3),
-    ])
 
     # Dataset y splits
     labels_df = load_all_labels()
     labels_df.to_csv("Labels/combined_labels.csv", index=False)
-    dataset = BasketballPositionDataset(labels_df, transform=transform)
+    dataset = BasketballPositionDataset(labels_df, transform=transform_config)
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_ds, val_ds = random_split(dataset, [train_size, val_size])
@@ -101,20 +99,11 @@ def main(args):
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE)
 
-    # Modelo
-    model = models.resnet50(pretrained=True)
-    model.fc = nn.Sequential(
-        nn.Linear(model.fc.in_features, 256),
-        nn.ReLU(),
-        nn.Dropout(0.3),
-        nn.Linear(256, 2)
-    )  # Salida: x, y
-    model = model.to(DEVICE)
 
     # Pérdida y optimizador
     # criterion = nn.MSELoss()
     criterion = nn.SmoothL1Loss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    optimizer = torch.optim.Adam(model_config.parameters(), lr=LR)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
 
@@ -123,18 +112,18 @@ def main(args):
 
     if args.check_error:
         print("Calculando errores de píxeles en el dataset...")
-        model.load_state_dict(torch.load("Model/Autoball_model.pth", map_location=DEVICE))
-        compute_pixel_errors(model, dataset, DEVICE)
+        model_config.load_state_dict(torch.load("Model/Autoball_model.pth", map_location=DEVICE))
+        compute_pixel_errors(model_config, dataset, DEVICE)
         return
 
     for epoch in range(NUM_EPOCHS):
-        model.train()
+        model_config.train()
         running_loss = 0
         for images, targets in train_loader:
             images, targets = images.to(DEVICE), targets.to(DEVICE)
 
             optimizer.zero_grad()
-            outputs = model(images)
+            outputs = model_config(images)
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
@@ -143,12 +132,12 @@ def main(args):
         avg_train_loss = running_loss / len(train_loader)
         train_losses.append(avg_train_loss)
 
-        model.eval()
+        model_config.eval()
         val_loss = 0
         with torch.no_grad():
             for images, targets in val_loader:
                 images, targets = images.to(DEVICE), targets.to(DEVICE)
-                outputs = model(images)
+                outputs = model_config(images)
                 loss = criterion(outputs, targets)
                 val_loss += loss.item()
 
@@ -170,7 +159,7 @@ def main(args):
     plt.grid()
     plt.savefig("Model/loss_plot.png")
 
-    accepted_tolerance=compute_pixel_errors(model, dataset, DEVICE,args.see_points)
+    accepted_tolerance=compute_pixel_errors(model_config, dataset, DEVICE,args.see_points)
     try:
         with open("Model/accepted_tolerance.txt", "r") as f:
             old_tolerance = float(f.read().strip())
@@ -179,7 +168,7 @@ def main(args):
     if accepted_tolerance > old_tolerance:
         print("El modelo ha mejorado su precisión, guardando nuevo modelo.")
         os.makedirs("Model", exist_ok=True)
-        torch.save(model.state_dict(), "Model/Autoball_model.pth")
+        torch.save(model_config.state_dict(), "Model/Autoball_model.pth")
         with open("Model/accepted_tolerance.txt", "w") as f:
             f.write(f"{accepted_tolerance:.2f}")
     else:
