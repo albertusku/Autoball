@@ -39,7 +39,7 @@ class BaseCapture:
         distance = np.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
         if left_side:
             distance = -distance  # Negar la distancia si está a la izquierda del centro
-        self.send_data_to_PID(distance)
+        # self.send_data_to_PID(distance)
         return distance
     
     def send_data_to_PID(self,data):

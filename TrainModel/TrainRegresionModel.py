@@ -11,11 +11,11 @@ from pathlib import Path
 from PIL import Image
 import argparse
 import matplotlib.patches as patches
-from Config.model_config import transform_config,get_model
+from Config.model_config import transform_config,get_model,HybridLoss
 
 # Configuración
 BATCH_SIZE = 32
-NUM_EPOCHS = 20
+NUM_EPOCHS = 30
 LR = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -103,7 +103,8 @@ def main(args):
     # Pérdida y optimizador
     # criterion = nn.MSELoss()
     model_config = get_model(for_training=True, load_weights=False)
-    criterion = nn.SmoothL1Loss()
+    # criterion = nn.SmoothL1Loss()
+    criterion = HybridLoss(img_width=640, img_height=360, margin_px=15)
     optimizer = torch.optim.Adam(model_config.parameters(), lr=LR)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
