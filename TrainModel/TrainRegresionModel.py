@@ -96,8 +96,25 @@ def main(args):
     val_size = len(dataset) - train_size
     train_ds, val_ds = random_split(dataset, [train_size, val_size])
 
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE)
+    num_workers = os.cpu_count()  # Usa todos los núcleos disponibles
+    prefetch_factor = 4
+
+    train_loader = DataLoader(
+        train_ds, 
+        batch_size=BATCH_SIZE, 
+        shuffle=True, 
+        num_workers=num_workers, 
+        prefetch_factor=prefetch_factor,
+        pin_memory=True  # si estás en CUDA, mejora rendimiento
+    )
+    val_loader = DataLoader(
+        val_ds, 
+        batch_size=BATCH_SIZE, 
+        shuffle=False, 
+        num_workers=num_workers, 
+        prefetch_factor=prefetch_factor,
+        pin_memory=True
+    )
 
 
     # Pérdida y optimizador
