@@ -2,9 +2,14 @@
 #include <unistd.h>
 #include <iostream>
 
+
+// "gpiochip0" refers to the main GPIO controller on the Raspberry Pi,
+// typically exposing the 54 GPIO lines of the Broadcom SoC (e.g., BCM2712).
+// This name corresponds to /dev/gpiochip0 as provided by the Linux GPIO subsystem.
+// You can verify it with `gpiodetect`. In most Pi systems, "gpiochip0" is correct.
 #define CHIP_NAME "gpiochip0"
-#define STEP_PIN 17  // GPIO17 físico: pin 11
-#define DIR_PIN  27  // GPIO27 físico: pin 13
+#define STEP_PIN 17  // GPIO17 : pin 11
+#define DIR_PIN  27  // GPIO27 : pin 13
 
 void pulse_step(gpiod_line* step, int delay_us) {
     gpiod_line_set_value(step, 1);
@@ -30,6 +35,9 @@ int main() {
         return 1;
     }
 
+    // `gpiod_line*` is a pointer to a single GPIO line within the chip.
+    // libgpiod uses pointers because GPIO lines are internal kernel-managed structures.
+    // We retrieve a specific GPIO (e.g., GPIO17) from the chip using its line offset.
     gpiod_line* step = gpiod_chip_get_line(chip, STEP_PIN);
     gpiod_line* dir = gpiod_chip_get_line(chip, DIR_PIN);
 
