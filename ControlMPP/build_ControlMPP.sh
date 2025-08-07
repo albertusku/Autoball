@@ -3,6 +3,6 @@ sudo cmake ..
 sudo make -j$(nproc)
 cd ..
 sudo mkdir -p bin
-sudo mv build/ControlMPP bin/
+sudo mv build/TestMPP bin/
 sudo rm -rf build
-sudo chmod +x bin/ControlMPP
+sudo chmod +x bin/
