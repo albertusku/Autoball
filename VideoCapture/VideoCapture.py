@@ -50,10 +50,10 @@ if __name__ == "__main__":
                         y_pixel = int(y_pred * height)
                         distance=capture.get_distance_to_middle(frame, x_pixel, y_pixel)
                         # Dibujar un círculo rojo (radio 8 px, grosor -1 = relleno)
-                        cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
-
-                        # Mostrar el frame con la predicción
-                        cv2.imshow("Frame", frame)
+                        if args.source == "file":
+                            cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
+                            # Mostrar el frame con la predicción
+                            cv2.imshow("Frame", frame)
                         last_time = time.time()
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
