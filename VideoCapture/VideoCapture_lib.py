@@ -51,24 +51,61 @@ class BaseCapture:
 
 class USBCameraCapture(BaseCapture):
     def __init__(self, camera_index=0, resolution=(640, 360), framerate=30):
-        self.cap = cv2.VideoCapture(camera_index)
+        self.camera_index = camera_index
+        self.resolution = resolution
+        self.framerate = framerate
+        self.running = False
+        self.frame = None
+        self.cap = cv2.VideoCapture(self.camera_index)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
         self.cap.set(cv2.CAP_PROP_FPS, framerate)
-        self.running = False
-        self.frame = None
         self.lock = threading.Lock()
 
-    def start(self):
+    def start(self, wait_first_frame=True, first_frame_timeout=2.0):
+
+        if self.cap is None or not self.cap.isOpened():
+            # Reabrir la cámara si fue cerrada
+            self.cap = cv2.VideoCapture(self.camera_index)
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.resolution[0])
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution[1])
+            self.cap.set(cv2.CAP_PROP_FPS,          self.framerate)
+
+        if not self.cap.isOpened():
+            # No se pudo abrir la cámara
+            return False
+        
         self.running = True
         threading.Thread(target=self._update, daemon=True).start()
 
+        if wait_first_frame:
+            # Espera a que llegue el primer frame (evita None al principio)
+            t0 = time.time()
+            while self.frame is None and (time.time() - t0) < first_frame_timeout:
+                time.sleep(0.01)
+            return self.frame is not None
+
+        return True
+
     def _update(self):
         while self.running:
+            if self.cap is None or not self.cap.isOpened():
+                # Reintento simple de reconexión
+                time.sleep(0.1)
+                self.cap = cv2.VideoCapture(self.camera_index)
+                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.resolution[0])
+                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution[1])
+                self.cap.set(cv2.CAP_PROP_FPS,          self.framerate)
+                continue
+            # Leer el siguiente frame
             ret, frame = self.cap.read()
             if ret:
                 with self.lock:
+                    # Actualizar el frame capturado
                     self.frame = frame
+            else:
+                # Si falla una lectura, evita bucle apretado y reintenta
+                time.sleep(0.01)
 
     def read(self):
         with self.lock:
@@ -76,7 +113,12 @@ class USBCameraCapture(BaseCapture):
 
     def stop(self):
         self.running = False
-        self.cap.release()
+        if self._thread is not None:
+            self._thread.join(timeout=0.5)
+            self._thread = None
+        if self.cap is not None:
+            self.cap.release()
+            self.cap = None
 
 
 class VideoFileCapture(BaseCapture):
