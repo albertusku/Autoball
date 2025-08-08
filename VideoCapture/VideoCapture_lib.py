@@ -3,6 +3,9 @@ import threading
 import time
 import socket
 import numpy as np
+from auto_utils.logger import get_logger
+
+log= get_logger("VideoCapture")
 
 
 class BaseCapture:
@@ -56,7 +59,7 @@ class USBCameraCapture(BaseCapture):
         self.framerate = framerate
         self.running = False
         self.frame = None
-        self.cap = cv2.VideoCapture(self.camera_index)
+        self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
         self.cap.set(cv2.CAP_PROP_FPS, framerate)
@@ -65,21 +68,21 @@ class USBCameraCapture(BaseCapture):
     def start(self, wait_first_frame=True, first_frame_timeout=2.0):
 
         if self.cap is None or not self.cap.isOpened():
-            # Reabrir la cámara si fue cerrada
-            self.cap = cv2.VideoCapture(self.camera_index)
+            log.warning(f"Reopening camera {self.camera_index} with resolution {self.resolution} and framerate {self.framerate}")
+            self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.resolution[0])
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution[1])
             self.cap.set(cv2.CAP_PROP_FPS,          self.framerate)
 
         if not self.cap.isOpened():
-            # No se pudo abrir la cámara
+            log.error(f"Failed to open camera {self.camera_index}. Check if the camera is connected and available.")
             return False
         
         self.running = True
         threading.Thread(target=self._update, daemon=True).start()
 
         if wait_first_frame:
-            # Espera a que llegue el primer frame (evita None al principio)
+            log.info(f"Waiting for the first frame from camera {self.camera_index}...")
             t0 = time.time()
             while self.frame is None and (time.time() - t0) < first_frame_timeout:
                 time.sleep(0.01)
@@ -90,21 +93,19 @@ class USBCameraCapture(BaseCapture):
     def _update(self):
         while self.running:
             if self.cap is None or not self.cap.isOpened():
-                # Reintento simple de reconexión
+                log.warning(f"Camera {self.camera_index} not opened, trying to reopen...")
                 time.sleep(0.1)
-                self.cap = cv2.VideoCapture(self.camera_index)
+                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
                 self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.resolution[0])
                 self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution[1])
                 self.cap.set(cv2.CAP_PROP_FPS,          self.framerate)
                 continue
-            # Leer el siguiente frame
             ret, frame = self.cap.read()
             if ret:
                 with self.lock:
-                    # Actualizar el frame capturado
                     self.frame = frame
             else:
-                # Si falla una lectura, evita bucle apretado y reintenta
+                log.error("Failed to capture frame from camera.")
                 time.sleep(0.01)
 
     def read(self):
@@ -112,6 +113,7 @@ class USBCameraCapture(BaseCapture):
             return self.frame.copy() if self.frame is not None else None
 
     def stop(self):
+        log.info("Stopping camera capture...")
         self.running = False
         if self._thread is not None:
             self._thread.join(timeout=0.5)

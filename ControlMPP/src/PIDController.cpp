@@ -4,9 +4,12 @@
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
+#include <auto_utils/logger.h>
 
 PIDController::PIDController(double kp, double ki, double kd)
     : kp(kp), ki(ki), kd(kd), integral(0.0), prev_error(0.0) {}
+
+static Logger logger("PIDController");
 
 double PIDController::compute(double error, double dt) {
     integral += error * dt;
@@ -23,7 +26,7 @@ void PIDController::reset() {
 double PIDController::receive_error_from_socket(const std::string& socket_path) {
     int sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sock < 0) {
-        std::cerr << "Error al crear socket\n";
+        logger.log("ERROR", "Socket creation failed");
         return 0.0;
     }
 
@@ -33,7 +36,7 @@ double PIDController::receive_error_from_socket(const std::string& socket_path) 
     strncpy(addr.sun_path, socket_path.c_str(), sizeof(addr.sun_path) - 1);
 
     if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-        std::cerr << "No se pudo conectar a " << socket_path << "\n";
+        logger.log("ERROR", "Failed to connect to socket: " + socket_path);
         close(sock);
         return 0.0;
     }
@@ -43,7 +46,7 @@ double PIDController::receive_error_from_socket(const std::string& socket_path) 
     close(sock);
 
     if (len <= 0) {
-        std::cerr << "No se recibió dato\n";
+        logger.log("ERROR", "Failed to read from socket or no data received");
         return 0.0;
     }
 

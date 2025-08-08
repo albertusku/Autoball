@@ -2,14 +2,21 @@ cmake_minimum_required(VERSION 3.10)
 project(ControlMPP)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_DIR "/home/ruiz17/Autoball")
 
 # Ruta del código fuente
-include_directories(inc)
+include_directories(
+    inc
+    ${CMAKE_DIR}
+)
+
 add_executable(TestMPP src/Test_MPP.cpp)
 add_executable(ControlMPP
     src/main.cpp
     src/PIDController.cpp
     src/StepperMotor.cpp
+    ${CMAKE_DIR}/auto_utils/logger.cpp
+    
 )
 
 # Vincula libgpiod

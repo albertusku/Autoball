@@ -7,10 +7,12 @@ from torchvision import transforms
 from PIL import Image
 from torchvision.models import resnet50
 from Config.model_config import transform_config, get_model
+from auto_utils.logger import get_logger
 
 MODEL_PATH = "../TrainModel/Model/Autoball_model.pth"
 IMAGE_SIZE = (224, 224)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+log= get_logger("VideoCapture")
 
 
 if __name__ == "__main__":
@@ -22,15 +24,20 @@ if __name__ == "__main__":
     parser.add_argument("--images_per_sec", type=int, default=30, help="Imagenes por segundo enviadas al modelo (default: 10)")
     args = parser.parse_args()
     frame_duration = 1.0 / args.framerate  # segundos por frame
+
+    log.info(f"Starting video capture with source in: {args.source}, framerate: {args.framerate}, video_file: {args.video_file}"
+              f", images_per_sec: {args.images_per_sec} and frame_duration: {frame_duration}")
+
     if args.source == "file":
         capture = VideoFileCapture(args.video_file)
     elif args.source == "camera":
         capture = USBCameraCapture(camera_index=args.camera, framerate=args.framerate)
+    
+    log.info(f"Getting model from: {MODEL_PATH}")
     model_config = get_model(for_training=False, load_weights=True, weights_path=MODEL_PATH)
+    log.info("Starting video capture...")
     if capture.start():
-        frame_interval = 1 / args.images_per_sec  # segundos
-
-        
+        frame_interval = 1 / args.images_per_sec  # segundos 
         try:
             last_time = time.time()
             while True:
@@ -55,7 +62,7 @@ if __name__ == "__main__":
                             # Mostrar el frame con la predicción
                             cv2.imshow("Frame", frame)
                         last_time = time.time()
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
                     break
 
                 

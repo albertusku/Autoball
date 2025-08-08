@@ -1,11 +1,13 @@
 #include "StepperMotor.h"
 #include <unistd.h>
 #include <iostream>
+#include <auto_utils/logger.h>
 
+static Logger logger("StepperMotor");
 StepperMotor::StepperMotor(const std::string& chip_name, int step_pin, int dir_pin) {
     chip = gpiod_chip_open_by_name(chip_name.c_str());
     if (!chip) {
-        std::cerr << "Error: No se pudo abrir el chip " << chip_name << "\n";
+        logger.log("ERROR", "Failed to open GPIO chip: " + chip_name);
         exit(1);
     }
 
@@ -13,14 +15,14 @@ StepperMotor::StepperMotor(const std::string& chip_name, int step_pin, int dir_p
     dir_line  = gpiod_chip_get_line(chip, dir_pin);
 
     if (!step_line || !dir_line) {
-        std::cerr << "Error: No se pudieron obtener las líneas GPIO\n";
+        logger.log("ERROR", "Failed to get GPIO lines for step or direction pins");
         gpiod_chip_close(chip);
         exit(1);
     }
 
     if (gpiod_line_request_output(step_line, "stepper", 0) < 0 ||
         gpiod_line_request_output(dir_line,  "stepper", 0) < 0) {
-        std::cerr << "Error: No se pudieron configurar los pines como salida\n";
+        logger.log("ERROR", "Failed to request GPIO lines as output");
         gpiod_chip_close(chip);
         exit(1);
     }
