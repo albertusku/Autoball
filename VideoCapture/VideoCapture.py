@@ -22,9 +22,9 @@ if __name__ == "__main__":
     parser.add_argument("--images_per_sec", type=int, default=30, help="Imagenes por segundo enviadas al modelo (default: 10)")
     args = parser.parse_args()
     frame_duration = 1.0 / args.framerate  # segundos por frame
-    if args.video_file:
+    if args.source == "file":
         capture = VideoFileCapture(args.video_file)
-    else:
+    elif args.source == "camera":
         capture = USBCameraCapture(camera_index=args.camera, framerate=args.framerate)
     model_config = get_model(for_training=False, load_weights=True, weights_path=MODEL_PATH)
     if capture.start():
