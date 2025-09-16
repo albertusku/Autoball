@@ -2,11 +2,19 @@ import cv2
 import threading
 import time
 import socket
+import time
+import errno
 import numpy as np
 from auto_utils.logger import get_logger
+import os
+
+MAX_SUN_PATH = 104
+DEFAULT_SOCK_PATH = "/tmp/pid_socket"
 
 log= get_logger("VideoCapture")
-
+SOCK_PATH = "/tmp/pid_socket"
+RTSP_NAME= "admin"
+RTSP_PASS= "user"
 
 class BaseCapture:
 
@@ -45,15 +53,54 @@ class BaseCapture:
         self.send_data_to_PID(distance)
         return distance
     
-    def send_data_to_PID(self,data):
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.connect("/tmp/pid_socket")
-        sock.sendall(f"{data:.2f}\n".encode())
-        sock.close()
+    def send_data_to_PID(self, data: float,
+                     socket_path: str = DEFAULT_SOCK_PATH,
+                     retries: int = 5,
+                     backoff_s: float = 0.05) -> bool:
+        """
+        Envía 'data' como texto (p.ej. '12.34') por socket UNIX DGRAM a 'socket_path'.
+        Devuelve True si se envió; False si agotó reintentos.
+        """
+        # Validaciones rápidas
+        if not socket_path or len(socket_path) > MAX_SUN_PATH:
+            # Evita paths demasiado largos que fallan silenciosamente en AF_UNIX
+            return False
+
+        payload = f"{float(data):.2f}".encode()
+        # log.debug(f"Enviando datos al PID: {payload} a {socket_path}")
+
+        delay = backoff_s
+        for _ in range(max(1, retries)):
+            try:
+                # DGRAM: no connect(); usar sendto()
+                with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as s:
+                    s.sendto(payload, socket_path)
+                return True
+
+            except FileNotFoundError:
+                # El receptor aún no ha hecho bind(); espera y reintenta
+                time.sleep(delay)
+                delay *= 1.5
+            except PermissionError:
+                # Permisos del socket insuficientes
+                return False
+            except OSError as e:
+                # ENOENT: no existe el path todavía; EINVAL a veces si el path no es socket
+                if e.errno in (errno.ENOENT, errno.EINVAL):
+                    time.sleep(delay)
+                    delay *= 1.5
+                    continue
+                # Otros errores: devolver False (o relanzar si prefieres)
+                return False
+
+        return False
+
+        
     
 
 class USBCameraCapture(BaseCapture):
     def __init__(self, camera_index=0, resolution=(640, 360), framerate=30):
+        self.rtsp_url = f"rtsp://{RTSP_NAME}:{RTSP_PASS}@192.168.1.65:8554/live"
         self.camera_index = camera_index
         self.resolution = resolution
         self.framerate = framerate
@@ -68,14 +115,15 @@ class USBCameraCapture(BaseCapture):
     def start(self, wait_first_frame=True, first_frame_timeout=2.0):
 
         if self.cap is None or not self.cap.isOpened():
-            log.warning(f"Reopening camera {self.camera_index} with resolution {self.resolution} and framerate {self.framerate}")
-            self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
+            log.warning(f"Reopening camera with resolution {self.resolution} and framerate {self.framerate}")
+            self.cap = cv2.VideoCapture(self.rtsp_url)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.resolution[0])
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution[1])
             self.cap.set(cv2.CAP_PROP_FPS,          self.framerate)
 
         if not self.cap.isOpened():
-            log.error(f"Failed to open camera {self.camera_index}. Check if the camera is connected and available.")
+            log.error(f"Failed to open camera. Check if the camera is connected and available.
+                        url: {self.rtsp_url}")
             return False
         
         self.running = True
@@ -95,13 +143,16 @@ class USBCameraCapture(BaseCapture):
             if self.cap is None or not self.cap.isOpened():
                 log.warning(f"Camera {self.camera_index} not opened, trying to reopen...")
                 time.sleep(0.1)
-                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
+                self.cap = cv2.VideoCapture(self.rtsp_url)
                 self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.resolution[0])
                 self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution[1])
                 self.cap.set(cv2.CAP_PROP_FPS,          self.framerate)
                 continue
             ret, frame = self.cap.read()
             if ret:
+                filename = os.path.join("/home/ruiz17/Autoball/test", f"frame.jpg")
+                log.debug(f"Saving frame in  {filename}")
+                cv2.imwrite(filename, frame)
                 with self.lock:
                     self.frame = frame
             else:

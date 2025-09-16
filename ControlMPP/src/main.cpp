@@ -45,6 +45,7 @@ int main() {
     while (true) {
         // Intenta leer un datagrama (la función tiene timeout interno ~100 ms)
         double error_px = pid.receive_error_from_socket(SOCKET_PATH);
+        logger.log("DEBUG", "Received error: " + std::to_string(error_px));
 
         if (!std::isfinite(error_px)) {
             // Si por cualquier motivo llega algo no parseable (NaN),

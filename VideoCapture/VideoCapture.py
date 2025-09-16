@@ -16,7 +16,7 @@ log= get_logger("VideoCapture")
 
 
 if __name__ == "__main__":
-    video_path="../TrainModel/InputVideos/test4.mp4"
+    video_path="../TrainModel/InputVideos/test5.mp4"
     parser = argparse.ArgumentParser(description="Captura de vídeo desde cámara USB o archivo de vídeo.")
     parser.add_argument("--source", type=str, default="file", help="Origen de la captura ('camera' o 'file')")
     parser.add_argument("--framerate", type=int, default=30, help="Tasa de fotogramas por segundo (default: 30)")
@@ -31,18 +31,17 @@ if __name__ == "__main__":
     if args.source == "file":
         capture = VideoFileCapture(args.video_file)
     elif args.source == "camera":
-        capture = USBCameraCapture(camera_index=args.camera, framerate=args.framerate)
+        capture = USBCameraCapture(framerate=args.framerate)
     
     log.info(f"Getting model from: {MODEL_PATH}")
     model_config = get_model(for_training=False, load_weights=True, weights_path=MODEL_PATH)
     log.info("Starting video capture...")
     if capture.start():
-        frame_interval = 1 / args.images_per_sec  # segundos 
         try:
             last_time = time.time()
             while True:
                 current_time = time.time()
-                if current_time - last_time >= frame_interval:
+                if current_time - last_time >= frame_duration:
                     frame = capture.read()
                     if frame is not None:
                         img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -60,7 +59,7 @@ if __name__ == "__main__":
                         if args.source == "file":
                             cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
                             # Mostrar el frame con la predicción
-                            cv2.imshow("Frame", frame)
+                            #cv2.imshow("Frame", frame)
                         last_time = time.time()
                 if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
                     break
