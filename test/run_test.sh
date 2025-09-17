@@ -31,7 +31,8 @@ if [ -f "$VIDEOCAPTURE_PYTHON_FILE" ]; then
     echo "Running VideoCapture script..."
     python3 "$VIDEOCAPTURE_PYTHON_FILE" \
         --framerate "$FRAMERATE" \
-        --source "$SOURCE"
+        --source "$SOURCE" \
+        --test
 else
     echo "Script not found: $VIDEOCAPTURE_PYTHON_FILE"
     exit 1
