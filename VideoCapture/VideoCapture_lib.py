@@ -100,7 +100,7 @@ class BaseCapture:
 
 class USBCameraCapture(BaseCapture):
     def __init__(self, camera_index=0, resolution=(640, 360), framerate=30):
-        self.rtsp_url = f"rtsp://{RTSP_NAME}:{RTSP_PASS}@192.168.1.65:8554/live"
+        self.rtsp_url = f"rtsp://{RTSP_NAME}:{RTSP_PASS}@192.168.1.57:8554/live"
         self.camera_index = camera_index
         self.resolution = resolution
         self.framerate = framerate
@@ -122,8 +122,8 @@ class USBCameraCapture(BaseCapture):
             self.cap.set(cv2.CAP_PROP_FPS,          self.framerate)
 
         if not self.cap.isOpened():
-            log.error(f"Failed to open camera. Check if the camera is connected and available.
-                        url: {self.rtsp_url}")
+            log.error(f"Failed to open camera. Check if the camera is connected and available."
+                        f"url: {self.rtsp_url}")
             return False
         
         self.running = True

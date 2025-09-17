@@ -18,3 +18,4 @@ TrainModel/InputVideos/
 ControlMPP/bin/
 venv/
 *.pth
+autoball.egg-info/

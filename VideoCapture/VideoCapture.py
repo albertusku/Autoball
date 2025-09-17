@@ -8,6 +8,8 @@ from PIL import Image
 from torchvision.models import resnet50
 from Config.model_config import transform_config, get_model
 from auto_utils.logger import get_logger
+import subprocess
+from flask import Flask, Response
 
 MODEL_PATH = "../TrainModel/Model/Autoball_model.pth"
 IMAGE_SIZE = (224, 224)
@@ -15,6 +17,37 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 log= get_logger("VideoCapture")
 RTSP_URL = "rtsp://localhost:8554/mystream"
 
+
+app = Flask(__name__)
+
+def generate_frames(capture, transform_config, model_config, DEVICE, width, height, frame_duration):
+    last_time = time.time()
+    while True:
+        current_time = time.time()
+        if current_time - last_time >= frame_duration:
+            frame = capture.read()
+            if frame is not None:
+                img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                input_tensor = transform_config(img).unsqueeze(0).to(DEVICE)
+                with torch.no_grad():
+                    output = model_config(input_tensor).squeeze().cpu().numpy()
+                x_pred, y_pred = float(output[0]), float(output[1])
+
+                # Convertir coordenadas normalizadas a píxeles
+                x_pixel = int(x_pred * width)
+                y_pixel = int(y_pred * height)
+                distance = capture.get_distance_to_middle(frame, x_pixel, y_pixel)
+                # Dibujar un círculo rojo (radio 8 px, grosor -1 = relleno)
+                cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
+                if args.source == "file":
+                    cv2.imshow("Frame", frame)
+                if args.test:
+                    ret, buffer = cv2.imencode('.jpg', frame)
+                    frame_bytes = buffer.tobytes()
+                    yield (b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                
+                last_time = time.time()
 
 if __name__ == "__main__":
     video_path="../TrainModel/InputVideos/test5.mp4"
@@ -40,58 +73,30 @@ if __name__ == "__main__":
     log.info("Starting video capture...")
     if capture.start():
         try:
-            last_time = time.time()
             first_frame = capture.read()
             if first_frame is None:
                 raise RuntimeError("No se pudo capturar el primer frame para inicializar RTSP.")
             height, width = first_frame.shape[:2]
-            ffmpeg_cmd = [
-                "ffmpeg",
-                "-re",
-                "-f", "rawvideo",
-                "-pix_fmt", "bgr24",
-                "-s", f"{width}x{height}",
-                "-r", str(fps),
-                "-i", "-",  # Entrada por stdin
-                "-c:v", "libx264",
-                "-preset", "ultrafast",
-                "-tune", "zerolatency",
-                "-f", "rtsp",
-                RTSP_URL
-                ]
-            proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-            while True:
-                current_time = time.time()
-                if current_time - last_time >= frame_duration:
+            if args.test:
+                from flask import Flask, Response
+                app = Flask(__name__)
+                @app.route('/video_feed')
+                def video_feed():
+                    return Response(
+                        generate_frames(capture, transform_config, model_config, DEVICE, width, height, frame_duration),
+                        mimetype='multipart/x-mixed-replace; boundary=frame'
+                    )
+                app.run(host='0.0.0.0', port=5000, debug=False)
+            else:
+                while True:
                     frame = capture.read()
                     if frame is not None:
-                        img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                        input_tensor = transform_config(img).unsqueeze(0).to(DEVICE)  
-                        with torch.no_grad():
-                            output = model_config(input_tensor).squeeze().cpu().numpy()  
-                        x_pred, y_pred = float(output[0]), float(output[1])
+                        cv2.imshow("Frame", frame)
+                    if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
+                        break
 
-                        # Convertir coordenadas normalizadas a píxeles
-                        x_pixel = int(x_pred * width)
-                        y_pixel = int(y_pred * height)
-                        distance=capture.get_distance_to_middle(frame, x_pixel, y_pixel)
-                        # Dibujar un círculo rojo (radio 8 px, grosor -1 = relleno)
-                        cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
-                        if args.test and proc is not None:
-                            proc.stdin.write(frame.tobytes())
-                        if args.source == "file" :
-                            cv2.imshow("Frame", frame)
-                            
-                        last_time = time.time()
-                if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
-                    break
-
-                
         finally:
             capture.stop()
             cv2.destroyAllWindows()
-            if proc:
-                proc.stdin.close()
-                proc.wait()
     
     
