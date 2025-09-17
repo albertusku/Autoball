@@ -1,4 +1,4 @@
-# Autoball – ControlMPP
+# Autoball
 
 Embedded system based on **Raspberry Pi 5** for real-time tracking of a basketball using computer vision and stepper motor control.
 
