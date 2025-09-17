@@ -66,12 +66,11 @@ Autoball consists of **two main subsystems** working in parallel:
 ## Python ↔ C++ Communication
 
 - **Channel**: UNIX socket (`/tmp/pid_socket`).  
-- **Data format**: floating numbers in text (`"25.40\n"`).  
 - **Mode**:  
   - Python **sends** error to PID.  
   - C++ **reads** the value in each control cycle.  
 
-This ensures **low latency** and avoids external dependencies (no MQTT/ROS2 required).  
+This ensures **low latency** and avoids external dependencies.
 
 ---
 
@@ -82,18 +81,4 @@ This ensures **low latency** and avoids external dependencies (no MQTT/ROS2 requ
 - Logs can be redirected to files for traceability.  
 
 ---
-
-## Expected Performance
-
-- **Minimum FPS**: 15 on Raspberry Pi 5 with USB camera.  
-- **Average latency**: < 100 ms between detection and motor correction.  
-- **Accuracy**: ball centered within < 15 pixels error.  
-
----
-
-## Future Extensions
-
-- 2-axis support (pan & tilt).  
-- Replace PID with adaptive control or MPC.  
-- Lightweight web interface for monitoring logs and video.  
-- Model optimization with **TensorRT** for higher FPS.  
+ 
