@@ -149,10 +149,9 @@ class USBCameraCapture(BaseCapture):
                 continue
             ret, frame = self.cap.read()
             if ret:
-                filename = os.path.join("/home/ruiz17/Autoball/test", f"frame.jpg")
-                #TEST
-                #log.debug(f"Saving frame in  {filename}")
-                #cv2.imwrite(filename, frame)
+                # filename = os.path.join("/home/ruiz17/Autoball/test", f"frame.jpg")
+                # log.debug(f"Saving frame in  {filename}")
+                # cv2.imwrite(filename, frame)
                 with self.lock:
                     self.frame = frame
             else:
