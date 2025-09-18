@@ -128,9 +128,8 @@ class USBCameraCapture(BaseCapture):
         
         self.running = True
         threading.Thread(target=self._update, daemon=True).start()
-
         if wait_first_frame:
-            log.info(f"Waiting for the first frame from camera {self.camera_index}...")
+            log.info(f"Waiting for the first frame from camera ...")
             t0 = time.time()
             while self.frame is None and (time.time() - t0) < first_frame_timeout:
                 time.sleep(0.01)

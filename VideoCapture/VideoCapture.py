@@ -11,7 +11,7 @@ from auto_utils.logger import get_logger
 import subprocess
 from flask import Flask, Response
 
-MODEL_PATH = "../TrainModel/Model/Autoball_model.pth"
+MODEL_PATH = "TrainModel/Model/Autoball_model.pth"
 IMAGE_SIZE = (224, 224)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 log= get_logger("VideoCapture")
@@ -22,32 +22,39 @@ app = Flask(__name__)
 
 def generate_frames(capture, transform_config, model_config, DEVICE, width, height, frame_duration):
     last_time = time.time()
-    while True:
-        current_time = time.time()
-        if current_time - last_time >= frame_duration:
-            frame = capture.read()
-            if frame is not None:
-                img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                input_tensor = transform_config(img).unsqueeze(0).to(DEVICE)
-                with torch.no_grad():
-                    output = model_config(input_tensor).squeeze().cpu().numpy()
-                x_pred, y_pred = float(output[0]), float(output[1])
-
-                # Convertir coordenadas normalizadas a píxeles
-                x_pixel = int(x_pred * width)
-                y_pixel = int(y_pred * height)
-                distance = capture.get_distance_to_middle(frame, x_pixel, y_pixel)
-                # Dibujar un círculo rojo (radio 8 px, grosor -1 = relleno)
-                cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
-                if args.source == "file":
-                    cv2.imshow("Frame", frame)
-                if args.test:
-                    ret, buffer = cv2.imencode('.jpg', frame)
-                    frame_bytes = buffer.tobytes()
-                    yield (b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+    try:
+        while True:
+            current_time = time.time()
+            if current_time - last_time >= frame_duration:
                 
-                last_time = time.time()
+                frame = capture.read()
+                if frame is not None:
+                    img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                    input_tensor = transform_config(img).unsqueeze(0).to(DEVICE)
+                    with torch.no_grad():
+                        output = model_config(input_tensor).squeeze().cpu().numpy()
+                    x_pred, y_pred = float(output[0]), float(output[1])
+
+                    # Convertir coordenadas normalizadas a píxeles
+                    x_pixel = int(x_pred * width)
+                    y_pixel = int(y_pred * height)
+                    distance = capture.get_distance_to_middle(frame, x_pixel, y_pixel)
+                    # Dibujar un círculo rojo (radio 8 px, grosor -1 = relleno)
+                    cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
+                    if args.source == "file":
+                        cv2.imshow("Frame", frame)
+                    if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
+                        break
+                    if args.test:
+                        ret, buffer = cv2.imencode('.jpg', frame)
+                        frame_bytes = buffer.tobytes()
+                        yield (b'--frame\r\n'
+                            b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                    
+                    last_time = time.time()
+    except Exception as e:
+        log.error(f"Error during frame generation: {e}")
+        raise e
 
 if __name__ == "__main__":
     video_path="../TrainModel/InputVideos/test5.mp4"
@@ -60,8 +67,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     frame_duration = 1.0 / args.framerate  # segundos por frame
 
-    log.info(f"Starting video capture with source in: {args.source}, framerate: {args.framerate}, video_file: {args.video_file}"
-              f", images_per_sec: {args.images_per_sec} and frame_duration: {frame_duration}")
+    log.info(f"Starting video capture with source in: {args.source}, framerate: {args.framerate},"
+              f"and frame_duration: {frame_duration}")
 
     if args.source == "file":
         capture = VideoFileCapture(args.video_file)
@@ -69,13 +76,17 @@ if __name__ == "__main__":
         capture = USBCameraCapture(framerate=args.framerate)
     
     log.info(f"Getting model from: {MODEL_PATH}")
-    model_config = get_model(for_training=False, load_weights=True, weights_path=MODEL_PATH)
+    try:
+        model_config = get_model(for_training=False, load_weights=True, weights_path=MODEL_PATH)
+    except Exception as e:
+        log.error(f"Error loading model: {e}")
+        raise e
     log.info("Starting video capture...")
     if capture.start():
         try:
             first_frame = capture.read()
             if first_frame is None:
-                raise RuntimeError("No se pudo capturar el primer frame para inicializar RTSP.")
+                raise RuntimeError("Not able to find the first frame to init RTSP.")
             height, width = first_frame.shape[:2]
             if args.test:
                 from flask import Flask, Response
@@ -88,12 +99,37 @@ if __name__ == "__main__":
                     )
                 app.run(host='0.0.0.0', port=5000, debug=False)
             else:
-                while True:
-                    frame = capture.read()
-                    if frame is not None:
-                        cv2.imshow("Frame", frame)
-                    if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
-                        break
+                log.info(f"Starting frame generation")
+                last_time = time.time()
+                try:
+                    while True:
+                        current_time = time.time()
+                        if current_time - last_time >= frame_duration:
+                            frame = capture.read()
+                            if frame is not None:
+                                img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                                input_tensor = transform_config(img).unsqueeze(0).to(DEVICE)
+                                with torch.no_grad():
+                                    output = model_config(input_tensor).squeeze().cpu().numpy()
+                                x_pred, y_pred = float(output[0]), float(output[1])
+
+                                # Convertir coordenadas normalizadas a píxeles
+                                x_pixel = int(x_pred * width)
+                                y_pixel = int(y_pred * height)
+                                distance = capture.get_distance_to_middle(frame, x_pixel, y_pixel)
+                                # Dibujar un círculo rojo (radio 8 px, grosor -1 = relleno)
+                                cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
+                                if args.source == "file":
+                                    cv2.imshow("Frame", frame)
+                                if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
+                                    break
+                                
+                                last_time = time.time()
+                                
+                except Exception as e:
+                    log.error(f"Error during frame generation: {e}")
+                    raise e
+                
 
         finally:
             capture.stop()
