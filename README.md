@@ -2,8 +2,9 @@
 
 Embedded system based on **Raspberry Pi 5** for real-time tracking of a basketball using computer vision and stepper motor control.
 
-## Repository Structure
+---
 
+## 📂 Repository Structure
 - **Config/** → Configuration files (model, parameters, etc.)  
 - **ControlMPP/** → C++ code for stepper motor control and PID.  
 - **TrainModel/** → Scripts for training the ball detection model (PyTorch).  
@@ -16,7 +17,7 @@ Embedded system based on **Raspberry Pi 5** for real-time tracking of a basketba
 
 ---
 
-## Technical Architecture
+## ⚙️ Technical Architecture
 
 Autoball consists of **two main subsystems** working in parallel:
 
@@ -34,7 +35,7 @@ Autoball consists of **two main subsystems** working in parallel:
 
 ---
 
-## Data Flow
+## 🔄 Data Flow
 
 ```
 [ Camera ] → [ VideoCapture.py ] → [ CNN Model ]
@@ -52,7 +53,7 @@ Autoball consists of **two main subsystems** working in parallel:
 
 ---
 
-## PID Control Details
+## 🧮 PID Control Details
 
 - **Input**: pixel error (`x_pred - x_center`).  
 - **Output**: desired angular motor speed.  
@@ -63,22 +64,55 @@ Autoball consists of **two main subsystems** working in parallel:
 
 ---
 
-## Python ↔ C++ Communication
+## 📡 Python ↔ C++ Communication
 
 - **Channel**: UNIX socket (`/tmp/pid_socket`).  
 - **Mode**:  
   - Python **sends** error to PID.  
   - C++ **reads** the value in each control cycle.  
 
-This ensures **low latency** and avoids external dependencies.
+This ensures **low latency** and avoids external dependencies.  
 
 ---
 
-## Logs & Diagnostics
+## 🛠️ Logs & Diagnostics
 
 - Python uses `logging` for FPS, predictions, and errors.  
 - C++ uses `auto_utils/logger` for **timestamped logs with levels (INFO/ERROR/DEBUG)**.  
 - Logs can be redirected to files for traceability.  
 
 ---
- 
+
+## ▶️ Usage / Execution
+
+All commands must be executed as **root**.
+
+### 🔹 Testing
+```bash
+./test/run_test.sh
+```
+
+### 🔹 Running the main program
+```bash
+python3 Autoball.py
+```
+
+### 🔹 Training the model manually
+- Start training with a new video:
+```bash
+python3 ManualTrainModel.py
+```
+
+- Continue training with the same video:
+```bash
+python3 ManualTrainModel.py --continue_annotation
+```
+
+### 🔹 Model training
+```bash
+python3 TrainModel/TrainRegresionModel.py
+```
+
+---
+
+
