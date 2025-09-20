@@ -8,14 +8,14 @@ import argparse
 
 def main(args):
 
-    video_path = "InputVideos/"  # Replace with your video path
+    video_path = "TrainModel/InputVideos/"  # Replace with your video path
     videos=[f for f in os.listdir(video_path) if os.path.isfile(os.path.join(video_path, f)) and f.endswith(('.mp4', '.avi', '.mov'))]
     video_name_with_extension=videos[0]
     videos[0]=videos[0].split('.')[0]
     video_path= os.path.join(video_path, video_name_with_extension)  # Use the first video in the directory
-    extractedFrames_path = f"ExtractedFrames/{videos[0]}"  # Replace with your desired output directory
-    annotatedFrames_path = f"AnnotatedFrames/{videos[0]}"  # Replace with your desired output directory
-    labesl_csv_path = f"Labels/{videos[0]}/labels.csv"  # Path to save the labels CSV file
+    extractedFrames_path = f"TrainModel/ExtractedFrames/{videos[0]}"  # Replace with your desired output directory
+    annotatedFrames_path = f"TrainModel/AnnotatedFrames/{videos[0]}"  # Replace with your desired output directory
+    labesl_csv_path = f"TrainModel/Labels/{videos[0]}/labels.csv"  # Path to save the labels CSV file
     step = 50  # Extract every 5th frame
     max_frames = None  # Set to None to extract all frames, or specify a limit
 

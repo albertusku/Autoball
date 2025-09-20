@@ -37,7 +37,7 @@ class BasketballPositionDataset(Dataset):
         return image, target
 
 
-def load_all_labels(labels_root="Labels", extracted_root="ExtractedFrames"):
+def load_all_labels(labels_root="TrainModel/Labels", extracted_root="TrainModel/ExtractedFrames"):
     labels_root = Path(labels_root)
     extracted_root = Path(extracted_root)
     video_dirs = [d for d in labels_root.iterdir() if d.is_dir()]
