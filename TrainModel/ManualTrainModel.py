@@ -8,9 +8,7 @@ from Config.env_config import *
 
 def main(args):
     videos=[f for f in os.listdir(VIDEO_PATH) if os.path.isfile(os.path.join(VIDEO_PATH, f)) and f.endswith(('.mp4', '.avi', '.mov'))]
-    video_name_with_extension=videos[0]
     videos[0]=videos[0].split('.')[0]
-    VIDEO_PATH= os.path.join(VIDEO_PATH, video_name_with_extension)  # Use the first video in the directory
     extractedFrames_path = f"TrainModel/ExtractedFrames/{videos[0]}"  # Replace with your desired output directory
     annotatedFrames_path = f"TrainModel/AnnotatedFrames/{videos[0]}"  # Replace with your desired output directory
     labesl_csv_path = f"TrainModel/Labels/{videos[0]}/labels.csv"  # Path to save the labels CSV file
