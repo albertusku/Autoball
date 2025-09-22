@@ -111,6 +111,7 @@ class USBCameraCapture(BaseCapture):
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
         self.cap.set(cv2.CAP_PROP_FPS, framerate)
         self.lock = threading.Lock()
+        self._thread = None
 
     def start(self, wait_first_frame=True, first_frame_timeout=2.0):
 
@@ -127,7 +128,8 @@ class USBCameraCapture(BaseCapture):
             return False
         
         self.running = True
-        threading.Thread(target=self._update, daemon=True).start()
+        self._thread=threading.Thread(target=self._update, daemon=True)
+        self._thread.start()
         if wait_first_frame:
             log.info(f"Waiting for the first frame from camera ...")
             t0 = time.time()

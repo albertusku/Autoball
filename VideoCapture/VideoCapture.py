@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 @app.route('/video_feed')
                 def video_feed():
                     return Response(
-                        generate_frames(capture, transform_config, model_config, DEVICE, width, height, frame_duration),
+                        generate_frames(capture,model_config,transform_config, DEVICE, width, height, frame_duration),
                         mimetype='multipart/x-mixed-replace; boundary=frame'
                     )
                 app.run(host='0.0.0.0', port=5000, debug=False)
