@@ -7,14 +7,11 @@ import errno
 import numpy as np
 from auto_utils.logger import get_logger
 import os
+from Config.env_config import *
 
 MAX_SUN_PATH = 104
-DEFAULT_SOCK_PATH = "/tmp/pid_socket"
-
 log= get_logger("VideoCapture")
-SOCK_PATH = "/tmp/pid_socket"
-RTSP_NAME= "admin"
-RTSP_PASS= "user"
+
 
 class BaseCapture:
 
@@ -54,7 +51,7 @@ class BaseCapture:
         return distance
     
     def send_data_to_PID(self, data: float,
-                     socket_path: str = DEFAULT_SOCK_PATH,
+                     socket_path: str = SOCK_PATH,
                      retries: int = 5,
                      backoff_s: float = 0.05) -> bool:
         """
@@ -100,7 +97,7 @@ class BaseCapture:
 
 class USBCameraCapture(BaseCapture):
     def __init__(self, camera_index=0, resolution=(640, 360), framerate=30):
-        self.rtsp_url = f"rtsp://{RTSP_NAME}:{RTSP_PASS}@192.168.1.57:8554/live"
+        self.rtsp_url = f"rtsp://{RTSP_NAME}:{RTSP_PASS}{RSTP_URL}"
         self.camera_index = camera_index
         self.resolution = resolution
         self.framerate = framerate

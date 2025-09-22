@@ -11,12 +11,10 @@ from auto_utils.logger import get_logger
 import subprocess
 from flask import Flask, Response
 import os
+from Config.env_config import *
 
-MODEL_PATH = "TrainModel/Model/Autoball_model.pth"
-IMAGE_SIZE = (224, 224)
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 log= get_logger("VideoCapture")
-RTSP_URL = "rtsp://localhost:8554/mystream"
+
 
 
 app = Flask(__name__)

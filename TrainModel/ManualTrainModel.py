@@ -2,17 +2,15 @@ from Utils.extracts_frames import extract_frames_from_video
 from Utils.annotated_frames import annotate_frames
 import os
 import argparse
-
+from Config.env_config import *
 
 
 
 def main(args):
-
-    video_path = "TrainModel/InputVideos/"  # Replace with your video path
-    videos=[f for f in os.listdir(video_path) if os.path.isfile(os.path.join(video_path, f)) and f.endswith(('.mp4', '.avi', '.mov'))]
+    videos=[f for f in os.listdir(VIDEO_PATH) if os.path.isfile(os.path.join(VIDEO_PATH, f)) and f.endswith(('.mp4', '.avi', '.mov'))]
     video_name_with_extension=videos[0]
     videos[0]=videos[0].split('.')[0]
-    video_path= os.path.join(video_path, video_name_with_extension)  # Use the first video in the directory
+    VIDEO_PATH= os.path.join(VIDEO_PATH, video_name_with_extension)  # Use the first video in the directory
     extractedFrames_path = f"TrainModel/ExtractedFrames/{videos[0]}"  # Replace with your desired output directory
     annotatedFrames_path = f"TrainModel/AnnotatedFrames/{videos[0]}"  # Replace with your desired output directory
     labesl_csv_path = f"TrainModel/Labels/{videos[0]}/labels.csv"  # Path to save the labels CSV file
@@ -31,7 +29,7 @@ def main(args):
     
     try:
         print(f"Extracting frames from video: {videos[0]}, saving to {extractedFrames_path}, step={step}, max_frames={max_frames}")
-        saved_paths = extract_frames_from_video(video_path, extractedFrames_path, step, max_frames)
+        saved_paths = extract_frames_from_video(VIDEO_PATH, extractedFrames_path, step, max_frames)
         print(f"Extracted frames saved at: {saved_paths}")
     except Exception as e:
         print(f"An error occurred: {e}")

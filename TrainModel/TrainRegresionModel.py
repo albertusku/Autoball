@@ -12,12 +12,7 @@ from PIL import Image
 import argparse
 import matplotlib.patches as patches
 from Config.model_config import transform_config,get_model,HybridLoss
-
-# Configuración
-BATCH_SIZE = 32
-NUM_EPOCHS = 30
-LR = 1e-4
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from Config.env_config import *
 
 
 def get_points(list_coords_pred, list_coords_gt):
@@ -131,7 +126,7 @@ def main(args):
 
     if args.check_error:
         print("Calculando errores de píxeles en el dataset...")
-        model_config.load_state_dict(torch.load("Model/Autoball_model.pth", map_location=DEVICE))
+        model_config.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
         compute_pixel_errors(model_config, dataset, DEVICE)
         return
 
@@ -187,7 +182,7 @@ def main(args):
     if accepted_tolerance > old_tolerance:
         print("El modelo ha mejorado su precisión, guardando nuevo modelo.")
         os.makedirs("Model", exist_ok=True)
-        torch.save(model_config.state_dict(), "Model/Autoball_model.pth")
+        torch.save(model_config.state_dict(), MODEL_PATH)
         with open("Model/accepted_tolerance.txt", "w") as f:
             f.write(f"{accepted_tolerance:.2f}")
     else:

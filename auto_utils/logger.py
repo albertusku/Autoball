@@ -2,11 +2,11 @@
 import logging
 from datetime import datetime
 import os
+from Config.env_config import *
 
 def get_logger(name: str) -> logging.Logger:
-    log_dir = "/home/ruiz17/Autoball/logs"
-    os.makedirs(log_dir, exist_ok=True)
-    log_file = os.path.join(log_dir, datetime.now().strftime("autoball_%Y-%m-%d.log"))
+    os.makedirs(LOG_DIR, exist_ok=True)
+    log_file = os.path.join(LOG_DIR, datetime.now().strftime("autoball_%Y-%m-%d.log"))
 
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)

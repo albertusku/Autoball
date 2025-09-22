@@ -8,12 +8,9 @@ from PIL import Image
 import os
 from Utils.dataset import BasketballPositionDataset, load_all_labels
 from Config.model_config import get_model, transform_config
-
+from Config.env_config import *
 # Configuración
-MODEL_PATH = "Model/Autoball_model.pth"
-N_SAMPLES = 50
-IMAGE_SIZE = (224, 224)
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 labels_df = load_all_labels()
 dataset = BasketballPositionDataset(labels_df, transform=transform_config)

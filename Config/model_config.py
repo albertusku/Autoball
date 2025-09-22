@@ -2,10 +2,11 @@ from torchvision import models, transforms
 import torch.nn as nn
 import torch
 import numpy as np
+from Config.env_config import *
 
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MODEL_PATH = "Model/Autoball_model.pth"  # Ruta al modelo entrenado
+
+  # Ruta al modelo entrenado
 
 class HybridLoss(nn.Module):
     def __init__(self, img_width=640, img_height=360, margin_px=15, penalty_factor=3.0):
@@ -36,7 +37,7 @@ transform_config = transforms.Compose([
     ])
 
 
-def get_model(for_training=True, load_weights=True, weights_path="Model/Autoball_model.pth"):
+def get_model(for_training=True, load_weights=True, weights_path=MODEL_PATH):
     model = models.resnet50(pretrained=for_training)
     model.fc = nn.Sequential(
         nn.Linear(model.fc.in_features, 256),

@@ -4,11 +4,10 @@ import signal
 import sys
 import os
 from auto_utils.logger import get_logger
+from Config.env_config import *
 
 # Rutas absolutas de los ejecutables
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-CONTROLMPP_BIN = os.path.join(PROJECT_DIR, "ControlMPP/bin/ControlMPP")
-VIDEOCAPTURE_SCRIPT = os.path.join(PROJECT_DIR, "VideoCapture/VideoCapture.py")
+
 
 # Lista para guardar procesos lanzados
 processes = []
@@ -16,17 +15,26 @@ processes = []
 log= get_logger("MAIN")
 
 def start():
-    log.info("Starting ControlMPP...")
-    control_proc = subprocess.Popen([CONTROLMPP_BIN], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    processes.append(control_proc)
+    if os.path.isfile(CONTROLMPP_BIN):
+        log.info("Starting ControlMPP...")
+        control_proc = subprocess.Popen([CONTROLMPP_BIN], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        processes.append(control_proc)
+    else:
+        log.error(f"ControlMPP binary not found at {CONTROLMPP_BIN}. Please compile it first.")
+        stop()
 
-    log.info("Starting VideoCapture...")
-    video_proc = subprocess.Popen(
-        ["python3", VIDEOCAPTURE_SCRIPT, "--source", "camera"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    processes.append(video_proc)
+    if os.path.isfile(VIDEOCAPTURE_SCRIPT) and os.path.isfile(MODEL_PATH):
+        log.info("Starting VideoCapture...")
+        video_proc = subprocess.Popen(
+            ["python3", VIDEOCAPTURE_SCRIPT, "--source", "camera"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        processes.append(video_proc)
+    else:
+        log.error(f"VideoCapture script or model not found. Please check paths:\n"
+                  f"VideoCapture: {VIDEOCAPTURE_SCRIPT}\nModel: {MODEL_PATH}")
+        stop()
 
 def stop(signum=None, frame=None):
     log.info("\nStopping AutoBall...")
