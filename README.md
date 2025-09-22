@@ -100,7 +100,7 @@ python3 Autoball.py
 ### 🔹 Training the model manually
 - Start training with a new video:
 ```bash
-python3 ManualTrainModel.py
+python3 TrainModel/ManualTrainModel.py
 ```
 
 - Continue training with the same video:
