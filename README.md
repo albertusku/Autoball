@@ -105,7 +105,7 @@ python3 ManualTrainModel.py
 
 - Continue training with the same video:
 ```bash
-python3 ManualTrainModel.py --continue_annotation
+python3 TrainModel/ManualTrainModel.py --continue_annotation
 ```
 
 ### 🔹 Model training
