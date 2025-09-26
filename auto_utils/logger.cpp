@@ -1,8 +1,17 @@
 #include "logger.h"
+#include <cstdlib>   // std::getenv
+#include <string>
+
+std::string get_log_dir() {
+    const char* home = std::getenv("HOME"); 
+    if (!home) home = "."; // fallback
+    return std::string(home) + "/Autoball/logs";
+}
+
 
 Logger::Logger(const std::string& process_name)
     : process(process_name) {
-    std::string log_dir = "/home/ruiz17/Autoball/logs";
+    std::string log_dir = get_log_dir();
     std::system(("mkdir -p " + log_dir).c_str());
 
     std::string filename = log_dir + "/autoball_" + current_date() + ".log";
@@ -13,8 +22,8 @@ void Logger::log(const std::string& level, const std::string& message) {
     std::ostringstream full;
     full << timestamp() << " [" << process << "] " << level << ": " << message << "\n";
     logfile << full.str();
-    logfile.flush(); // Opcional
-    std::cout << full.str(); // También a terminal
+    logfile.flush(); // Optional
+    std::cout << full.str(); 
 }
 
 std::string Logger::current_date() {

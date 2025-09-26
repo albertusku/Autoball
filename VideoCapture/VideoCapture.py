@@ -20,25 +20,24 @@ log= get_logger("VideoCapture")
 app = Flask(__name__)
 
 def process_frame(frame, model_config, transform_config, DEVICE, width, height):
-    """Procesa un frame: predicción y dibujo del balón"""
+    """Processes a frame: prediction and drawing of the ball position."""
     img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     input_tensor = transform_config(img).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         output = model_config(input_tensor).squeeze().cpu().numpy()
     x_pred, y_pred = float(output[0]), float(output[1])
 
-    # Convertir coordenadas normalizadas a píxeles
+    # Convert normalized coordinates to pixels
     x_pixel = int(x_pred * width)
     y_pixel = int(y_pred * height)
     distance = capture.get_distance_to_middle(frame, x_pixel, y_pixel)
-    # Dibujar un círculo rojo
     cv2.circle(frame, (x_pixel, y_pixel), 8, (0, 0, 255), -1)
     # filename = os.path.join("/home/ruiz17/Autoball/test", f"frame.jpg")
     # cv2.imwrite(filename, frame)
     return frame
 
 def generate_frames(capture, model_config, transform_config, DEVICE, width, height, frame_duration):
-    """Generador de frames para Flask (stream MJPEG)"""
+    """Frame generator for Flask (MJPEG stream)"""
     last_time = time.time()
     while True:
         current_time = time.time()
@@ -54,12 +53,12 @@ def generate_frames(capture, model_config, transform_config, DEVICE, width, heig
 
 if __name__ == "__main__":
     video_path="../TrainModel/InputVideos/test5.mp4"
-    parser = argparse.ArgumentParser(description="Captura de vídeo desde cámara USB o archivo de vídeo.")
-    parser.add_argument("--source", type=str, default="file", help="Origen de la captura ('camera' o 'file')")
-    parser.add_argument("--framerate", type=int, default=30, help="Tasa de fotogramas por segundo (default: 30)")
-    parser.add_argument("--video_file", type=str, default=video_path, help="Ruta al archivo de vídeo (opcional)")
-    parser.add_argument("--images_per_sec", type=int, default=30, help="Imagenes por segundo enviadas al modelo (default: 10)")
-    parser.add_argument("--test",action="store_true",help="True si se ejecuta el test")
+    parser = argparse.ArgumentParser(description="Video capture from USB camera or video file.")
+    parser.add_argument("--source", type=str, default="file", help="Capture source ('camera' or 'file')")
+    parser.add_argument("--framerate", type=int, default=30, help="Frame rate (default: 30)")
+    parser.add_argument("--video_file", type=str, default=video_path, help="Path to the video file (optional)")
+    parser.add_argument("--images_per_sec", type=int, default=30, help="Images per second sent to the model (default: 10)")
+    parser.add_argument("--test", action="store_true", help="True if running in test mode")
     args = parser.parse_args()
     frame_duration = 1.0 / args.framerate  # segundos por frame
 

@@ -1,7 +1,6 @@
 #!/bin/bash
 # run_test.sh
 
-# Obtener la ruta absoluta al directorio de este script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Starting general test"

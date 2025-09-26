@@ -4,7 +4,7 @@ project(ControlMPP)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_DIR "/home/ruiz17/Autoball")
 
-# Ruta del código fuente
+# path to code
 include_directories(
     inc
     ${CMAKE_DIR}
@@ -19,7 +19,7 @@ add_executable(ControlMPP
     
 )
 
-# Vincula libgpiod
+# link libgpiod
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GPIOD REQUIRED IMPORTED_TARGET libgpiod)
 

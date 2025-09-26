@@ -7,7 +7,7 @@ with open("requirements.txt") as f:
 setup(
     name="autoball",
     version="0.1.0",
-    description="Seguimiento de balón de baloncesto con visión artificial",
+    description="Basketball ball tracking with computer vision",
     author="Alberto Ruiz",
     packages=find_packages(),  
     install_requires=requirements,

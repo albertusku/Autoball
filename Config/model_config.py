@@ -5,24 +5,21 @@ import numpy as np
 from Config.env_config import *
 
 
-
-  # Ruta al modelo entrenado
-
 class HybridLoss(nn.Module):
     def __init__(self, img_width=640, img_height=360, margin_px=15, penalty_factor=3.0):
         super().__init__()
         self.base_loss = nn.SmoothL1Loss()
-        self.margin = margin_px / np.sqrt(img_width**2 + img_height**2)  # Normalizado
+        self.margin = margin_px / np.sqrt(img_width**2 + img_height**2)  # Normalized
         self.penalty_factor = penalty_factor
 
     def forward(self, pred, target):
-        # pred y target están normalizados en [0, 1]
+        # pred and target are normalized to [0, 1]
         base = self.base_loss(pred, target)
         
-        # Distancia euclidiana por muestra
+        # Euclidean distance per sample
         d = torch.norm(pred - target, dim=1)
         
-        # Penaliza si el error supera el margen
+        # Penalizes if the error exceeds the margin
         penalty = torch.clamp(d - self.margin, min=0.0).mean()
         
         return base + self.penalty_factor * penalty

@@ -18,14 +18,14 @@ from Config.env_config import *
 def get_points(list_coords_pred, list_coords_gt):
     fig, ax = plt.subplots(figsize=(6.4, 3.6), dpi=100)
     ax.set_xlim(0, 640)
-    ax.set_ylim(360, 0)  # invertir eje Y para que (0,0) esté arriba a la izquierda
+    ax.set_ylim(360, 0)  # Invert Y axis so that (0,0) is at the top left
     ax.set_title("Predicciones vs. Reales (360p)")
     ax.set_facecolor('black')
 
     for x_pred, y_pred in list_coords_pred:
         ax.add_patch(patches.Circle((x_pred, y_pred), radius=4, color='lime'))
 
-    # Dibujar puntos reales en rojo
+    # Painting red circles for ground truth
     for x_gt, y_gt in list_coords_gt:
         ax.add_patch(patches.Circle((x_gt, y_gt), radius=4, color='red'))
     
@@ -36,13 +36,13 @@ def get_points(list_coords_pred, list_coords_gt):
     plt.close()
 
 def  compute_pixel_errors(model, dataset, device,see_points=False):
-    tolerance = 15  # Tolerancia en píxeles
+    tolerance = 15  # pixel tolerance for acceptance
     model.eval()
     pixel_errors = []
     list_coords_pred = []
     list_coords_gt = []
 
-    for idx in tqdm(range(len(dataset)), desc="Evaluando"):
+    for idx in tqdm(range(len(dataset)), desc="Evaluating"):
         img_tensor, target = dataset[idx]
         img_path = Path(dataset.data.iloc[idx]['image'])
 
@@ -53,7 +53,7 @@ def  compute_pixel_errors(model, dataset, device,see_points=False):
         with torch.no_grad():
             pred = model(input_tensor).squeeze().cpu().numpy()
 
-        # Coordenadas en píxeles
+        # pixel coordinates
         x_gt = target[0].item() * w
         y_gt = target[1].item() * h
         x_pred = pred[0] * w
@@ -68,10 +68,10 @@ def  compute_pixel_errors(model, dataset, device,see_points=False):
         
 
     pixel_errors = np.array(pixel_errors)
-    print(f"\nError medio: {pixel_errors.mean():.2f} px")
-    print(f"Mediana: {np.median(pixel_errors):.2f} px")
-    print(f"Máximo: {pixel_errors.max():.2f} px")
-    print(f"≤{tolerance}px: {(pixel_errors <= tolerance).sum()} / {len(pixel_errors)} imágenes ({(pixel_errors <= tolerance).mean()*100:.1f}%)")
+    print(f"\nmean error: {pixel_errors.mean():.2f} px")
+    print(f"median: {np.median(pixel_errors):.2f} px")
+    print(f"max: {pixel_errors.max():.2f} px")
+    print(f"≤{tolerance}px: {(pixel_errors <= tolerance).sum()} / {len(pixel_errors)} images ({(pixel_errors <= tolerance).mean()*100:.1f}%)")
 
     pixel_errors = np.array(pixel_errors)
     accepted = (pixel_errors <= tolerance).sum()
@@ -83,7 +83,7 @@ def  compute_pixel_errors(model, dataset, device,see_points=False):
 def main(args):
 
 
-    # Dataset y splits
+    # Dataset and splits
     labels_df = load_all_labels()
     labels_df.to_csv("Labels/combined_labels.csv", index=False)
     dataset = BasketballPositionDataset(labels_df, transform=transform_config)
@@ -91,7 +91,7 @@ def main(args):
     val_size = len(dataset) - train_size
     train_ds, val_ds = random_split(dataset, [train_size, val_size])
 
-    num_workers = os.cpu_count()  # Usa todos los núcleos disponibles
+    num_workers = os.cpu_count()  # Use all cpus available
     prefetch_factor = 4
 
     train_loader = DataLoader(
@@ -100,7 +100,7 @@ def main(args):
         shuffle=True, 
         num_workers=num_workers, 
         prefetch_factor=prefetch_factor,
-        pin_memory=True  # si estás en CUDA, mejora rendimiento
+        pin_memory=True  
     )
     val_loader = DataLoader(
         val_ds, 
@@ -112,7 +112,6 @@ def main(args):
     )
 
 
-    # Pérdida y optimizador
     # criterion = nn.MSELoss()
     model_config = get_model(for_training=True, load_weights=False)
     # criterion = nn.SmoothL1Loss()
@@ -120,12 +119,11 @@ def main(args):
     optimizer = torch.optim.Adam(model_config.parameters(), lr=LR)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
-
-    # Entrenamiento
+    # Training loop
     train_losses, val_losses = [], []
 
     if args.check_error:
-        print("Calculando errores de píxeles en el dataset...")
+        print("Calculating pixel errors in the dataset…")
         model_config.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
         compute_pixel_errors(model_config, dataset, DEVICE)
         return
@@ -167,7 +165,7 @@ def main(args):
     plt.plot(train_losses, label='Train Loss')
     plt.plot(val_losses, label='Val Loss')
     plt.legend()
-    plt.title("Loss durante entrenamiento")
+    plt.title("Loss during training")
     plt.xlabel("Epoch")
     plt.ylabel("MSE Loss")
     plt.grid()
@@ -180,29 +178,29 @@ def main(args):
     except FileNotFoundError:
         old_tolerance = 0.0
     if accepted_tolerance > old_tolerance:
-        print("El modelo ha mejorado su precisión, guardando nuevo modelo.")
+        print("The model has improved its accuracy, saving new model.")
         os.makedirs("Model", exist_ok=True)
         torch.save(model_config.state_dict(), MODEL_PATH)
         with open("Model/accepted_tolerance.txt", "w") as f:
             f.write(f"{accepted_tolerance:.2f}")
     else:
-        print("El modelo no ha mejorado su precisión, no se guarda el nuevo modelo.")
+        print("The model has not improved its accuracy, new model will not be saved.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Script para extracción de frames y anotación manual del balón"
+        description="Script for frame extraction and manual ball annotation"
     )
 
     parser.add_argument(
         "--check_error",
         action="store_true",
-        help="Calcula el error medio de las predicciones del modelo en píxeles",
+        help="Calculates the mean error of the model’s predictions in pixels",
     )
 
     parser.add_argument(
         "--see_points",
         action="store_true",
-        help="Visualiza las coordenadas predichas y reales en un gráfico",
+        help="Visualizes the predicted and ground-truth coordinates on a plot",
     )
 
 

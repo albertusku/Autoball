@@ -24,11 +24,11 @@ public:
     bool start(int recv_timeout_ms = 100, Callback cb = nullptr) {
         if (running_) return true;
 
-        // Crear socket
+        // Create socket
         fd_ = ::socket(AF_UNIX, SOCK_DGRAM, 0);
         if (fd_ < 0) { perr_("socket"); return false; }
 
-        // Preparar dirección
+        // Prepare address
         ::unlink(path_.c_str());
         sockaddr_un addr{}; addr.sun_family = AF_UNIX;
         if (path_.size() >= sizeof(addr.sun_path)) { perr_custom_("sun_path too long"); ::close(fd_); fd_=-1; return false; }
@@ -39,9 +39,9 @@ public:
             perr_("bind"); ::close(fd_); fd_ = -1; return false;
         }
 
-        ::chmod(path_.c_str(), 0666); // permisos amplios (ajusta si hace falta)
+        ::chmod(path_.c_str(), 0666); 
 
-        // timeout (opcional)
+        // timeout
         if (recv_timeout_ms > 0) {
             timeval tv{}; tv.tv_sec = recv_timeout_ms / 1000; tv.tv_usec = (recv_timeout_ms % 1000) * 1000;
             if (::setsockopt(fd_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == -1) perr_("setsockopt(SO_RCVTIMEO)");
@@ -64,7 +64,7 @@ public:
         ::unlink(path_.c_str());
     }
 
-    // Último mensaje recibido (si hay)
+    // Last message received (thread-safe)
     std::optional<std::string> latest() const {
         std::lock_guard<std::mutex> lk(m_);
         return last_;
@@ -76,7 +76,7 @@ private:
         while (running_) {
             ssize_t n = ::recv(fd_, buf.data(), bufsize_ - 1, 0);
             if (n < 0) {
-                // timeout u otro error; continuamos para permitir parada limpia
+                // timeout or error
                 continue;
             }
             if (n == 0) continue;

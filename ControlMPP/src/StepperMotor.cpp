@@ -37,9 +37,9 @@ StepperMotor::~StepperMotor() {
 void StepperMotor::step(bool clockwise) {
     gpiod_line_set_value(dir_line, clockwise ? 1 : 0);
     gpiod_line_set_value(step_line, 1);
-    usleep(500);  // pulso alto
+    usleep(500);  
     gpiod_line_set_value(step_line, 0);
-    usleep(500);  // pulso bajo
+    usleep(500);  
 }
 
 void StepperMotor::rotate_steps(bool clockwise, int steps, int delay_us) {

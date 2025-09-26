@@ -20,18 +20,18 @@ void pulse_step(gpiod_line* step, int delay_us) {
 
 void rotate(gpiod_line* step, gpiod_line* dir, bool clockwise, int steps, int delay_us) {
     gpiod_line_set_value(dir, clockwise ? 1 : 0);
-    std::cout << "→ Rotando en sentido " << (clockwise ? "horario" : "antihorario") << "..." << std::endl;
+    std::cout << "→ Rotating " << (clockwise ? "CW" : "CCW") << "..." << std::endl;
     for (int i = 0; i < steps; ++i) {
         pulse_step(step, delay_us);
     }
 }
 
 int main() {
-    std::cout << "Iniciando prueba del motor paso a paso...\n";
+    std::cout << "Starting the stepper motor test…\n";
 
     gpiod_chip* chip = gpiod_chip_open_by_name(CHIP_NAME);
     if (!chip) {
-        std::cerr << "No se pudo abrir gpiochip0.\n";
+        std::cerr << "Cant open gpiochip0.\n";
         return 1;
     }
 
@@ -49,14 +49,14 @@ int main() {
     gpiod_line_request_output(step, "stepper_test", 0);
     gpiod_line_request_output(dir, "stepper_test", 0);
 
-    rotate(step, dir, true, 200, 1000);   // 200 pasos CW, 1ms por flanco
+    rotate(step, dir, true, 200, 1000);   // 200 steps CW, 1ms por flanco
     sleep(1);
-    rotate(step, dir, false, 200, 1000);  // 200 pasos CCW
+    rotate(step, dir, false, 200, 1000);  // 200 steps CCW
 
     gpiod_line_release(step);
     gpiod_line_release(dir);
     gpiod_chip_close(chip);
 
-    std::cout << "Prueba finalizada.\n";
+    std::cout << "TEST done.\n";
     return 0;
 }

@@ -52,7 +52,7 @@ double PIDController::receive_error_from_socket(const std::string& socket_path) 
         s.erase(std::find_if(s.rbegin(), s.rend(), notspace).base(), s.end());
     };
 
-    // Inicializar socket y hacer bind la primera vez
+    // Initialize socket and bind the first time
     if (fd == -1) {
         if (socket_path.size() >= sizeof(sockaddr_un::sun_path)) {
             logger.log("ERROR", "Socket path too long: " + socket_path);
@@ -65,7 +65,7 @@ double PIDController::receive_error_from_socket(const std::string& socket_path) 
             return last_valid;
         }
 
-        // Limpiar path previo y bind
+        // Clean previous path and bind
         ::unlink(socket_path.c_str());
         sockaddr_un addr{};
         addr.sun_family = AF_UNIX;
@@ -78,13 +78,13 @@ double PIDController::receive_error_from_socket(const std::string& socket_path) 
             return last_valid;
         }
 
-        // Permisos (opcional): permitir escritura a otros procesos/usuarios
+        // Permissions (optional): allow write access to other processes/users
         if (::chmod(socket_path.c_str(), 0666) == -1) {
             log_errno("chmod()");
             // no es fatal
         }
 
-        // Timeout de recepción (opcional): 100 ms
+        // Reception timeout (optional): 100 ms
         timeval tv{};
         tv.tv_sec = 0;
         tv.tv_usec = 100000; // 100ms
@@ -97,12 +97,12 @@ double PIDController::receive_error_from_socket(const std::string& socket_path) 
         logger.log("INFO", "UNIX DGRAM receiver bound at " + socket_path);
     }
 
-    // Recibir un datagrama
+    // Receive a datagram
     char buf[128];
     ssize_t n = ::recv(fd, buf, sizeof(buf) - 1, 0);
     if (n < 0) {
         if (timeout_set && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            // Timeout: devolvemos el último valor
+            // Timeout
             logger.log("DEBUG", "recv() timeout; returning last value");
             return last_valid;
         }
@@ -110,7 +110,7 @@ double PIDController::receive_error_from_socket(const std::string& socket_path) 
         return last_valid;
     }
     if (n == 0) {
-        // datagrama vacío
+        // empty datagram?
         logger.log("WARN", "Empty datagram received");
         return last_valid;
     }
@@ -119,11 +119,11 @@ double PIDController::receive_error_from_socket(const std::string& socket_path) 
     std::string s(buf);
     trim(s);
 
-    // Asegurar punto decimal por si viniera coma
+    // Ensure decimal point in case a comma is received
     std::replace(s.begin(), s.end(), ',', '.');
 
     try {
-        // Forzar locale clásico para std::stod si el global estuviera cambiado
+        // Force classic locale for std::stod in case the global one was changed
         std::locale::global(std::locale::classic());
         double val = std::stod(s);
         last_valid = val;

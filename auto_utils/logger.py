@@ -11,7 +11,6 @@ def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
-    # Evita duplicados
     if not logger.handlers:
         fh = logging.FileHandler(log_file)
         fh.setLevel(logging.DEBUG)
@@ -20,7 +19,6 @@ def get_logger(name: str) -> logging.Logger:
         fh.setFormatter(formatter)
         logger.addHandler(fh)
 
-        # También por consola si quieres
         ch = logging.StreamHandler()
         ch.setFormatter(formatter)
         logger.addHandler(ch)

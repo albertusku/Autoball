@@ -13,7 +13,7 @@ class BasketballPositionDataset(Dataset):
         if self.data.empty:
             raise ValueError("El CSV no contiene datos.")
 
-        # Leer tamaño real de la primera imagen
+        # Read actual size of the first image
         sample_path = Path(self.data.iloc[0]["image"])
         with Image.open(sample_path) as img:
             self.width, self.height = img.size
@@ -26,7 +26,7 @@ class BasketballPositionDataset(Dataset):
         image_path = Path(row['image']) 
         image = Image.open(image_path).convert("RGB")
 
-        # Coordenadas normalizadas
+        # Normalized coordinates
         x = float(row['x']) / self.width
         y = float(row['y']) / self.height
         target = torch.tensor([x, y], dtype=torch.float32)
@@ -46,7 +46,7 @@ def load_all_labels(labels_root="TrainModel/Labels", extracted_root="TrainModel/
     for video_dir in video_dirs:
         csv_path = video_dir / "labels.csv"
         if not csv_path.exists():
-            print(f"[AVISO] No se encontró: {csv_path}, se omite.")
+            print(f"[WARN] Not found: {csv_path}, skipping.")
             continue
 
         df = pd.read_csv(csv_path)
@@ -56,6 +56,6 @@ def load_all_labels(labels_root="TrainModel/Labels", extracted_root="TrainModel/
         all_data.append(df)
 
     if not all_data:
-        raise ValueError("No se cargó ningún label. Verifica las carpetas.")
+        raise ValueError("No labels were loaded. Check the folders.")
 
     return pd.concat(all_data, ignore_index=True)

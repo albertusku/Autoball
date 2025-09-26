@@ -6,10 +6,8 @@ import os
 from auto_utils.logger import get_logger
 from Config.env_config import *
 
-# Rutas absolutas de los ejecutables
 
-
-# Lista para guardar procesos lanzados
+# List to keep track of subprocesses
 processes = []
 
 log= get_logger("MAIN")
@@ -39,24 +37,21 @@ def start():
 def stop(signum=None, frame=None):
     log.info("\nStopping AutoBall...")
     for proc in processes:
-        if proc.poll() is None:  # sigue vivo
-            proc.terminate()     # señal SIGTERM
+        if proc.poll() is None:  
+            proc.terminate()    
             try:
                 proc.wait(timeout=3)
             except subprocess.TimeoutExpired:
-                log.info(f"Forzando kill a PID {proc.pid}")
+                log.info(f"Killing PID {proc.pid}")
                 proc.kill()
     sys.exit(0)
 
 if __name__ == "__main__":
-    # Capturar Ctrl+C
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
 
     start()
     log.info("AutoBall running. Press Ctrl+C to stop.")
-
-    # Mantener vivo hasta que los hijos terminen
     try:
         for proc in processes:
             proc.wait()
