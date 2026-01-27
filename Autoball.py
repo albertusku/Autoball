@@ -24,7 +24,7 @@ def start():
     if os.path.isfile(VIDEOCAPTURE_SCRIPT) and os.path.isfile(MODEL_PATH):
         log.info("Starting VideoCapture...")
         video_proc = subprocess.Popen(
-            ["python3", VIDEOCAPTURE_SCRIPT, "--source", "camera"],
+            ["python3", VIDEOCAPTURE_SCRIPT, "--source", "camera_usb"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )

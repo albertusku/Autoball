@@ -1,4 +1,4 @@
-from VideoCapture_lib import USBCameraCapture, VideoFileCapture
+from VideoCapture_lib import RTSPCameraCapture, VideoFileCapture, USBCameraCapture
 import argparse
 import cv2
 import time
@@ -52,9 +52,10 @@ def generate_frames(capture, model_config, transform_config, DEVICE, width, heig
             last_time = time.time()
 
 if __name__ == "__main__":
-    video_path="../TrainModel/InputVideos/test5.mp4"
+    video_path =""
+    # video_path="../TrainModel/InputVideos/test5.mp4"
     parser = argparse.ArgumentParser(description="Video capture from USB camera or video file.")
-    parser.add_argument("--source", type=str, default="file", help="Capture source ('camera' or 'file')")
+    parser.add_argument("--source", type=str, default="file", help="Capture source ('camera_rtsp','camera_usb','file')")
     parser.add_argument("--framerate", type=int, default=30, help="Frame rate (default: 30)")
     parser.add_argument("--video_file", type=str, default=video_path, help="Path to the video file (optional)")
     parser.add_argument("--images_per_sec", type=int, default=30, help="Images per second sent to the model (default: 10)")
@@ -67,7 +68,9 @@ if __name__ == "__main__":
 
     if args.source == "file":
         capture = VideoFileCapture(args.video_file)
-    elif args.source == "camera":
+    elif args.source == "camera_rtsp":
+        capture = RTSPCameraCapture(framerate=args.framerate)
+    elif args.source == "camera_usb":
         capture = USBCameraCapture(framerate=args.framerate)
     
     log.info(f"Getting model from: {MODEL_PATH}")
@@ -79,22 +82,41 @@ if __name__ == "__main__":
     log.info("Starting video capture...")
     if capture.start():
         try:
-            first_frame = capture.read()
-            if first_frame is None:
-                raise RuntimeError("Not able to find the first frame to init RTSP.")
-            height, width = first_frame.shape[:2]
-            if args.test:
-                from flask import Flask, Response
-                app = Flask(__name__)
-                @app.route('/video_feed')
-                def video_feed():
-                    return Response(
-                        generate_frames(capture,model_config,transform_config, DEVICE, width, height, frame_duration),
-                        mimetype='multipart/x-mixed-replace; boundary=frame'
-                    )
-                app.run(host='0.0.0.0', port=5000, debug=False)
-            else:
-                log.info(f"Starting frame generation (no Flask)")
+            if args.source == "camera_rtsp" or args.source == "file":
+                first_frame = capture.read()
+                if first_frame is None:
+                    raise RuntimeError("Not able to find the first frame to init RTSP.")
+                height, width = first_frame.shape[:2]
+                if args.test:
+                    from flask import Flask, Response
+                    app = Flask(__name__)
+                    @app.route('/video_feed')
+                    def video_feed():
+                        return Response(
+                            generate_frames(capture,model_config,transform_config, DEVICE, width, height, frame_duration),
+                            mimetype='multipart/x-mixed-replace; boundary=frame'
+                        )
+                    app.run(host='0.0.0.0', port=5000, debug=False)
+                else:
+                    log.info(f"Starting frame generation (no Flask)")
+                    last_time = time.time()
+                    while True:
+                        current_time = time.time()
+                        if current_time - last_time >= frame_duration:
+                            frame = capture.read()
+                            if frame is not None:
+                                frame = process_frame(frame, model_config, transform_config, DEVICE, width, height)
+                                if args.source == "file":
+                                    cv2.imshow("Frame", frame)
+                                if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
+                                    break
+                            last_time = time.time()
+            elif args.source == "camera_usb":
+                first_frame = capture.read()
+                if first_frame is None:
+                    raise RuntimeError("Not able to find the first frame to init USB camera.")
+                height, width = first_frame.shape[:2]
+                log.info(f"Starting frame generation for USB camera (no Flask)")
                 last_time = time.time()
                 while True:
                     current_time = time.time()
@@ -102,9 +124,8 @@ if __name__ == "__main__":
                         frame = capture.read()
                         if frame is not None:
                             frame = process_frame(frame, model_config, transform_config, DEVICE, width, height)
-                            if args.source == "file":
-                                cv2.imshow("Frame", frame)
-                            if cv2.waitKey(1) & 0xFF == ord('q') and args.source == "file":
+                            cv2.imshow("Frame", frame)
+                            if cv2.waitKey(1) & 0xFF == ord('q'):
                                 break
                         last_time = time.time()
                 

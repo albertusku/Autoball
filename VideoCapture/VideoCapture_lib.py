@@ -96,7 +96,7 @@ class BaseCapture:
         
     
 
-class USBCameraCapture(BaseCapture):
+class RTSPCameraCapture(BaseCapture):
     def __init__(self, camera_index=0, resolution=(640, 360), framerate=30):
         self.rtsp_url = f"rtsp://{RTSP_NAME}:{RTSP_PASS}{RSTP_URL}"
         self.camera_index = camera_index
@@ -201,3 +201,43 @@ class VideoFileCapture(BaseCapture):
         """Releases the video file resource."""
         self.cap.release()
     
+
+class USBCameraCapture(BaseCapture):
+    def __init__(self, camera_index=0, resolution=(640, 360), framerate=30):
+        self.camera_index = camera_index
+        self.resolution = resolution
+        self.framerate = framerate
+        self.running = False
+        self.frame = None
+        self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
+        self.cap.set(cv2.CAP_PROP_FPS, framerate)
+        self.lock = threading.Lock()
+        self._thread = None
+
+    def start(self, wait_first_frame=True, first_frame_timeout=2.0):
+
+        if self.cap is None or not self.cap.isOpened():
+            log.warning(f"Reopening camera with resolution {self.resolution} and framerate {self.framerate}")
+            self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  self.resolution[0])
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution[1])
+            self.cap.set(cv2.CAP_PROP_FPS,          self.framerate)
+
+        if not self.cap.isOpened():
+            log.error(f"Failed to open camera. Check if the camera is connected and available."
+                        f"index: {self.camera_index}")
+            return False
+        
+        self.running = True
+        self._thread=threading.Thread(target=self._update, daemon=True)
+        self._thread.start()
+        if wait_first_frame:
+            log.info(f"Waiting for the first frame from camera ...")
+            t0 = time.time()
+            while self.frame is None and (time.time() - t0) < first_frame_timeout:
+                time.sleep(0.01)
+            return self.frame is not None
+
+        return True
